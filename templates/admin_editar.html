@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% if produto %}Editar{% else %}Adicionar{% endif %} Produto</title>
+</head>
+<body>
+    <h2>{% if produto %}Editar Produto: {{ produto.nome }}{% else %}Adicionar Novo Produto{% endif %}</h2>
+    <p><a href="{{ url_for('admin_dashboard') }}">Voltar para o Dashboard</a></p>
+    <hr>
+    
+    <form method="POST" enctype="multipart/form-data">
+        
+        <label for="id">ID do Produto (Único):</label><br>
+        <input type="text" id="id" name="id" value="{% if produto %}{{ produto.id }}{% endif %}" {% if produto %}readonly{% else %}required{% endif %}><br><br>
+        
+        <label for="nome">Nome:</label><br>
+        <input type="text" id="nome" name="nome" value="{% if produto %}{{ produto.nome }}{% endif %}" required><br><br>
+        
+        <label for="preco">Preço:</label><br>
+        <input type="number" id="preco" name="preco" step="0.01" value="{% if produto %}{{ produto.preco }}{% endif %}" required><br><br>
+        
+        <label for="descricao">Descrição:</label><br>
+        <textarea id="descricao" name="descricao" rows="4">{% if produto %}{{ produto.descricao }}{% endif %}</textarea><br><br>
+        
+        <h3>Mídia (4 Imagens + 1 Vídeo)</h3>
+        
+        {% for i in range(1, 5) %}
+            {% set img_path_key = 'img_path_' ~ i %}
+            <label for="imagem_{{ i }}">Imagem {{ i }}:</label>
+            {% if produto and produto[img_path_key] %}
+                <p>Arquivo atual: <a href="{{ url_for('static', filename='uploads/' ~ produto[img_path_key].split('/')[-1]) }}" target="_blank">Ver Imagem</a></p>
+            {% endif %}
+            <input type="file" id="imagem_{{ i }}" name="imagem_{{ i }}" accept="image/*"><br><br>
+        {% endfor %}
+
+        <label for="video">Vídeo:</label>
+        {% if produto and produto['video_path'] %}
+             <p>Arquivo atual: <a href="{{ url_for('static', filename='uploads/' ~ produto['video_path'].split('/')[-1]) }}" target="_blank">Ver Vídeo</a></p>
+        {% endif %}
+        <input type="file" id="video" name="video" accept="video/*"><br><br>
+        
+        <button type="submit">Salvar Produto</button>
+    </form>
+</body>
+</html>

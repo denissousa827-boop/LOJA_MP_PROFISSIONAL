@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Minha Loja Oficial{% endblock %}</title>
+    
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&display=swap">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+</head>
+<body>
+
+    <header class="header">
+        <div class="container header-content">
+            <a href="{{ url_for('homepage') }}" class="logo">Minha Loja Oficial</a>
+            <nav>
+                <a href="{{ url_for('homepage') }}">Produtos</a>
+                <a href="{{ url_for('pagina_info', chave_config='contato_email') }}">Contato</a> 
+                <a href="#"><i class="fas fa-shopping-cart"></i> Carrinho</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="main-content container">
+        {% block content %}{% endblock %}
+    </main>
+
+    <footer class="footer-woozen">
+        <div class="container">
+            <div class="footer-top">
+                <div class="footer-column customer-service">
+                    <h4 style="color: #00bcd4;">Minha Loja Oficial</h4>
+                    <p>Atendimento ao Cliente:</p>
+                    <p>{{ config.get('contato_email', 'Email não configurado') }}</p>
+                    <p>WhatsApp: **{{ config.get('contato_whatsapp', 'WhatsApp não configurado') }}**</p>
+                    <div class="social-icons">
+                        <a href="#"><i class="fab fa-facebook-f"></i></a>
+                        <a href="#"><i class="fab fa-twitter"></i></a>
+                        <a href="#"><i class="fab fa-instagram"></i></a>
+                        <a href="#"><i class="fab fa-pinterest-p"></i></a>
+                    </div>
+                </div>
+
+                <div class="footer-column">
+                    <h4>Institucional</h4>
+                    <ul>
+                        <li><a href="{{ url_for('pagina_info', chave_config='quem_somos') }}">Quem Somos</a></li>
+                        <li><a href="#">Fale Conosco</a></li>
+                        <li><a href="{{ url_for('pagina_info', chave_config='politica_privacidade') }}">Política de Privacidade</a></li>
+                        <li><a href="{{ url_for('pagina_info', chave_config='politica_reembolso') }}">Política de Reembolso</a></li>
+                        <li><a href="{{ url_for('admin_login') }}">Acesso Administrativo</a></li>
+                    </ul>
+                </div>
+
+                <div class="footer-column">
+                    <h4>Dúvidas Gerais</h4>
+                    <ul>
+                        <li><a href="{{ url_for('pagina_info', chave_config='formas_pagamento') }}">Formas de Pagamento</a></li>
+                        <li><a href="{{ url_for('pagina_info', chave_config='entrega_frete') }}">Entrega e Frete</a></li>
+                        <li><a href="{{ url_for('pagina_info', chave_config='trocas_devolucoes') }}">Trocas e Devoluções</a></li>
+                        <li><a href="{{ url_for('pagina_info', chave_config='garantia_seguranca') }}">Garantia e Segurança</a></li>
+                        <li><a href="{{ url_for('pagina_info', chave_config='rastrear_pedido') }}">Rastrear seu Pedido</a></li>
+                    </ul>
+                </div>
+
+                <div class="footer-column">
+                    <h4>Assine Nossa Newsletter</h4>
+                    <p>Receba nossas promoções, atualizações e notícias.</p>
+                    <div class="newsletter-form">
+                        <form action="{{ url_for('cadastro_cliente') }}" method="GET">
+                            <input type="email" placeholder="Seu E-mail" disabled>
+                            <button type="submit">ASSINAR (Cadastro de Cliente)</button>
+                        </form>
+                    </div>
+                </div>
+            </div> 
+            
+            <div class="footer-bottom">
+                <div class="secure-badges">
+                    <img src="https://via.placeholder.com/100x40?text=Norton+Secured" alt="Norton Secured">
+                    <img src="https://via.placeholder.com/100x40?text=Google+Seguro" alt="Google Site Seguro">
+                    <a href="#" style="color: white; font-weight: bold; margin-left: 20px;">Reclame AQUI</a>
+                </div>
+
+                <div class="payment-badges">
+                    {% for caminho in banner_pagamento %}
+                        <img src="{{ url_for('static', filename=caminho) }}" alt="Banner {{ caminho.split('/')[-1] }}">
+                    {% endfor %}
+                </div>
+
+                <p>© 2025 Tema Minha Loja Oficial | Seu CNPJ aqui!</p>
+                <p>Preços e condições de pagamento exclusivos para compras neste site oficial...</p>
+                <p>E-commerce © E-commerce por DENIS</p>
+            </div>
+        </div>
+    </footer>
+    </body>
+</html>

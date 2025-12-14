@@ -1,0 +1,435 @@
+/* static/style.css */
+
+/* --- Estilos Globais (baseados no base.html) --- */
+body {
+    font-family: 'Montserrat', sans-serif;
+    background-color: #f4f4f4;
+    margin: 0;
+    padding: 0;
+    line-height: 1.6;
+}
+
+.container {
+    width: 90%;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+/* --- Estilos do Header (barra de navegação) --- */
+.header {
+    /* CORREÇÃO 1: Fundo preto forte para o header */
+    background-color: #000; 
+    padding: 10px 0;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.5); /* Sombra mais visível */
+}
+
+.nav-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 20px;
+}
+
+.logo a {
+    color: white; /* Letra branca */
+    text-decoration: none;
+    font-size: 1.8em;
+    font-weight: 700;
+}
+
+.nav-menu ul {
+    list-style: none;
+    display: flex;
+    margin: 0;
+    padding: 0;
+}
+
+.nav-menu li {
+    margin-left: 20px;
+}
+
+.nav-menu a {
+    color: white; /* CORREÇÃO 2: Letras brancas no menu */
+    text-decoration: none;
+    font-weight: 600;
+    padding: 5px 10px;
+    transition: color 0.2s;
+}
+
+.nav-menu a:hover {
+    color: #007bff; /* Cor de destaque azul ao passar o mouse */
+}
+
+/* --- Estilos dos Cards de Produto (homepage.html) --- */
+.product-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+    justify-content: center;
+    padding: 40px 20px;
+}
+
+.product-card {
+    border: 1px solid #ddd;
+    padding: 15px;
+    width: 300px;
+    background-color: white;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    border-radius: 8px;
+    transition: transform 0.2s;
+    text-decoration: none;
+}
+
+.product-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 16px rgba(0,0,0,0.15);
+}
+
+.product-card a {
+    text-decoration: none;
+    color: inherit;
+}
+
+.product-image-placeholder img {
+    max-width: 100%;
+    height: 200px; 
+    background-color: #eee;
+    object-fit: contain; 
+    margin-bottom: 10px;
+    border-radius: 4px;
+}
+
+.product-title { font-size: 1.4em; color: #333; margin: 10px 0; }
+.product-description { font-size: 0.9em; color: #666; height: 40px; overflow: hidden; }
+
+/* CORREÇÃO 3: Preço em azul no card */
+.product-price { 
+    font-size: 1.2em; 
+    color: #007bff; 
+    font-weight: 700; 
+    margin: 10px 0; 
+}
+
+.btn-compra {
+    display: block;
+    margin-top: 15px;
+    padding: 10px;
+    background-color: #007bff;
+    color: white;
+    text-align: center;
+    text-decoration: none;
+    border-radius: 5px;
+    font-weight: 600;
+    transition: background-color 0.2s;
+}
+.btn-compra:hover {
+    background-color: #0056b3;
+}
+
+/* --- Estilos da Página de Detalhes do Produto (produto_detalhes.html) --- */
+.product-detail-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 40px;
+    padding: 40px 20px;
+    background-color: white;
+    margin: 30px auto;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.media-gallery {
+    width: 45%;
+    min-width: 300px;
+}
+
+.main-image img {
+    width: 100%;
+    height: auto;
+    max-height: 500px;
+    object-fit: contain;
+    border-radius: 4px;
+}
+
+.thumbnails {
+    display: flex;
+    gap: 10px;
+    margin-top: 15px;
+    justify-content: center;
+}
+
+.thumbnails img {
+    width: 80px;
+    height: 80px;
+    object-fit: cover;
+    border: 1px solid #ddd;
+    cursor: pointer;
+    border-radius: 4px;
+    transition: border-color 0.2s;
+}
+
+.thumbnails img:hover {
+    border-color: #007bff;
+}
+
+.info-side {
+    width: 45%;
+    min-width: 300px;
+}
+
+.info-side h1 {
+    font-size: 2em;
+    color: #333;
+    margin-top: 0;
+}
+
+/* CORREÇÃO 4: Preço em azul nos detalhes do produto */
+.product-detail-container .product-price { 
+    font-size: 2.2em;
+    color: #007bff; 
+    font-weight: 700;
+    margin: 15px 0;
+}
+
+.description-full {
+    margin-top: 30px;
+    color: #555;
+    line-height: 1.8;
+}
+
+.btn-detail {
+    font-size: 1.2em;
+    padding: 15px 30px;
+    margin-top: 20px;
+}
+
+/* Estilos para o bloco de vídeo */
+.video-container {
+    width: 100%;
+    margin-top: 30px;
+}
+
+.video-container h2 {
+    text-align: center;
+    color: #333;
+    margin-bottom: 20px;
+}
+
+.video-container video {
+    width: 100%;
+    max-width: 800px;
+    display: block;
+    margin: 0 auto;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+
+/* --- Estilos do Rodapé Woozen (footer) --- */
+.footer-woozen {
+    background-color: #3f1e7d; 
+    color: #ffffff;
+    font-family: Arial, sans-serif;
+    padding-top: 40px;
+    font-size: 14px;
+}
+
+.footer-top {
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    padding-bottom: 40px;
+    border-bottom: 1px solid #5a3c94;
+}
+
+.footer-column {
+    flex: 1;
+    min-width: 200px;
+    margin-right: 20px;
+    margin-bottom: 20px;
+}
+
+.footer-column h4 {
+    color: #ffffff;
+    font-size: 16px;
+    margin-bottom: 20px;
+    text-transform: uppercase;
+}
+
+.footer-column p, .footer-column a, .footer-column li {
+    color: #c9c9c9;
+    text-decoration: none;
+    line-height: 1.8;
+}
+
+.footer-column a:hover {
+    color: #ffffff;
+    text-decoration: underline;
+}
+
+/* Coluna de Atendimento e Newsletter */
+.customer-service p { margin: 5px 0; }
+
+.social-icons a {
+    display: inline-block;
+    color: #ffffff;
+    font-size: 20px;
+    margin-right: 15px;
+    margin-top: 15px;
+}
+
+.newsletter-form input[type="email"] {
+    width: 100%;
+    padding: 10px;
+    border: none;
+    border-radius: 4px;
+    margin-bottom: 10px;
+}
+
+.newsletter-form button {
+    width: 100%;
+    padding: 10px;
+    background-color: #00bcd4; 
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: background-color 0.2s;
+}
+
+.newsletter-form button:hover {
+    background-color: #0097a7;
+}
+
+/* Footer Bottom (Direitos Autorais e Selos) */
+.footer-bottom {
+    text-align: center;
+    padding: 20px 0;
+}
+
+.footer-bottom p {
+    color: #c9c9c9;
+    margin-top: 15px;
+    font-size: 12px;
+}
+
+.payment-badges {
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+    flex-wrap: wrap;
+    margin: 20px 0;
+}
+
+.payment-badges img {
+    height: 25px;
+    max-width: 100%;
+    vertical-align: middle;
+    border-radius: 2px;
+}
+
+.secure-badges {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-bottom: 15px;
+}
+
+.secure-badges img {
+    height: 40px; 
+    margin: 0 10px;
+}
+
+
+/* --- CORREÇÕES ESSENCIAIS DE RESPONSIVIDADE --- */
+@media (max-width: 900px) {
+    /* Altera o layout dos detalhes do produto para empilhar itens */
+    .product-detail-container {
+        flex-direction: column; 
+        padding: 10px;
+    }
+
+    .media-gallery,
+    .info-side {
+        width: 100%;
+        margin-bottom: 20px;
+    }
+
+    /* Redimensiona a imagem principal */
+    .main-image img {
+        height: auto;
+        max-height: 400px;
+    }
+    
+    /* Faz as miniaturas rolarem horizontalmente */
+    .thumbnails {
+        overflow-x: auto;
+        white-space: nowrap;
+        justify-content: flex-start;
+        padding: 5px 0;
+    }
+    
+    .thumbnails img {
+        width: 80px; 
+        height: 80px;
+        flex-shrink: 0; 
+    }
+
+    /* Redimensiona o vídeo */
+    .video-container {
+        padding: 0 10px;
+    }
+}
+
+@media (max-width: 768px) {
+    /* Responsividade do Header */
+    .nav-container {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    .nav-menu ul {
+        flex-direction: column;
+        width: 100%;
+    }
+    .nav-menu li {
+        margin: 5px 0;
+        text-align: center;
+        width: 100%;
+    }
+    
+    /* Responsividade do Footer */
+    .footer-top {
+        flex-direction: column;
+        align-items: center;
+    }
+    .footer-column {
+        min-width: 90%;
+        margin-right: 0;
+        text-align: center;
+    }
+    .footer-column h4 { text-align: center; }
+    .footer-column ul { padding: 0; list-style: none; }
+    .social-icons { margin-bottom: 20px; }
+    .payment-badges, .secure-badges {
+        padding: 0 10px;
+    }
+}
+
+/* Correção de Responsividade para Cards em Telas Pequenas */
+@media (max-width: 650px) {
+    .product-grid {
+        gap: 10px;
+    }
+    .product-card {
+        width: 90%; 
+        max-width: 350px;
+        margin: 0 auto;
+    }
+}

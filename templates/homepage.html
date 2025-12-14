@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+
+{% block title %}Produtos em Destaque | Minha Loja Oficial{% endblock %}
+
+{% block content %}
+    <section id="produtos" class="product-grid">
+        <h2 class="section-title" style="width: 100%; text-align: center; margin-bottom: 20px;">
+            Nossos Produtos em Destaque
+        </h2> 
+
+        {% for produto in produtos %}
+        <div class="product-card">
+            <a href="{{ url_for('produto_detalhes', id_produto=produto.id) }}">
+                <div class="product-image-placeholder">
+                    {% if produto.img_path_1 %}
+                        {% set filename = produto.img_path_1.split('/')[-1] %}
+                        <img src="{{ url_for('static', filename='uploads/' + filename) }}" alt="{{ produto.nome }}">
+                    {% else %}
+                        <img src="{{ url_for('static', filename='placeholder.png') }}" alt="Imagem não disponível">
+                    {% endif %}
+                </div>
+                <div class="product-details">
+                    <h3 class="product-title">{{ produto.nome }}</h3>
+                    <p class="product-description">
+                        {{ produto.descricao or "Clique para ver detalhes." }}
+                    </p>
+                    <p class="product-price">R$ {{ "%.2f"|format(produto.preco)|replace('.', ',') }}</p>
+                </div>
+            </a>
+
+            <a href="{{ url_for('comprar_produto', id_produto=produto.id) }}" class="btn-compra">
+                Comprar Agora
+            </a>
+        </div>
+        {% endfor %}
+
+    </section>
+
+    {% if not produtos %}
+        <h3 style="width: 100%; text-align: center; padding: 50px;">Nenhum produto cadastrado.</h3>
+    {% endif %}
+{% endblock %}
