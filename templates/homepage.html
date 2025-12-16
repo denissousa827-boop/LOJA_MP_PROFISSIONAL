@@ -1,42 +1,154 @@
 {% extends "base.html" %}
 
-{% block title %}Produtos em Destaque | Minha Loja Oficial{% endblock %}
+{% block title %}Produtos em Destaque e Ofertas | Minha Loja Oficial{% endblock %}
 
 {% block content %}
+
+    <div class="banner-top" style="background-image: url('{{ config.get("banner_img") }}'); 
+        height: 300px; 
+        background-size: cover; 
+        background-position: center; 
+        margin-bottom: 30px;
+        display: flex; align-items: center; justify-content: center; color: white; text-shadow: 2px 2px 4px rgba(0,0,0,0.5);">
+        
+        <h1 style="font-size: 2.5em;">Melhores Ofertas do Mês!</h1>
+    </div>
+
+
+    {% if ofertas %}
+    <section class="ofertas-relampago container" style="padding: 20px 0;">
+        <h2 class="section-title" style="color: darkred; border-bottom: 2px solid darkred; width: 100%; text-align: center; margin-bottom: 20px;">
+            🔥 OFERTAS RELÂMPAGO!
+        </h2>
+        
+        <div class="product-grid" style="display: flex; flex-wrap: wrap; gap: 20px; justify-content: center;">
+            {% for produto in ofertas %}
+            <div class="product-card" style="border: 2px solid darkred; position: relative;">
+                
+                {% set desconto = 100 - (produto['novo_preco'] / produto['preco'] * 100) if produto['preco'] and produto['novo_preco'] else 0 %}
+                <span class="offer-tag" style="position: absolute; top: 10px; right: 10px; background: red; color: white; padding: 5px 10px; border-radius: 5px; font-weight: bold;">
+                    -{{ "%.0f"|format(desconto) }}%
+                </span>
+
+                <a href="{{ url_for('produto_detalhes', id_produto=produto.id) }}">
+                    <div class="product-image-placeholder">
+                        {% if produto.img_path_1 %}
+                            {% set filename = produto.img_path_1.split('/')[-1] %}
+                            <img src="{{ url_for('static', filename='uploads/' + filename) }}" alt="{{ produto.nome }}">
+                        {% else %}
+                            <img src="{{ url_for('static', filename='placeholder.png') }}" alt="Imagem não disponível">
+                        {% endif %}
+                    </div>
+                    <div class="product-details">
+                        <h3 class="product-title">{{ produto.nome }}</h3>
+                        
+                        <div class="price-container">
+                            <span class="old-price" style="text-decoration: line-through; color: gray; display: block;">
+                                De: R$ {{ "%.2f"|format(produto.preco)|replace('.', ',') }}
+                            </span>
+                            <span class="price" style="color: darkred; font-size: 1.4em; font-weight: bold;">
+                                Por: R$ {{ "%.2f"|format(produto.novo_preco)|replace('.', ',') }}
+                            </span>
+                        </div>
+                        
+                        {% if produto.oferta_fim %}
+                            <div class="countdown-timer" id="countdown-{{ loop.index }}" 
+                                data-time="{{ produto['oferta_fim'] }}" 
+                                style="color: #0056b3; font-weight: bold; margin-top: 10px; padding: 5px; background: #f0f0f0; border-radius: 5px; text-align: center;">
+                                Tempo restante: Carregando...
+                            </div>
+                        {% endif %}
+                    </div>
+                </a>
+
+                <a href="{{ url_for('comprar_produto', id_produto=produto.id) }}" class="btn-compra" style="background: darkred; color: white; border-color: darkred;">
+                    Comprar Agora
+                </a>
+            </div>
+            {% endfor %}
+        </div>
+        <hr style="margin: 40px 0; border-top: 2px solid #ccc;">
+    </section>
+    {% endif %}
+
+    
     <section id="produtos" class="product-grid">
         <h2 class="section-title" style="width: 100%; text-align: center; margin-bottom: 20px;">
             Nossos Produtos em Destaque
-        </h2> 
+        </h2>
 
-        {% for produto in produtos %}
-        <div class="product-card">
-            <a href="{{ url_for('produto_detalhes', id_produto=produto.id) }}">
-                <div class="product-image-placeholder">
-                    {% if produto.img_path_1 %}
-                        {% set filename = produto.img_path_1.split('/')[-1] %}
-                        <img src="{{ url_for('static', filename='uploads/' + filename) }}" alt="{{ produto.nome }}">
-                    {% else %}
-                        <img src="{{ url_for('static', filename='placeholder.png') }}" alt="Imagem não disponível">
-                    {% endif %}
-                </div>
-                <div class="product-details">
-                    <h3 class="product-title">{{ produto.nome }}</h3>
-                    <p class="product-description">
-                        {{ produto.descricao or "Clique para ver detalhes." }}
-                    </p>
-                    <p class="product-price">R$ {{ "%.2f"|format(produto.preco)|replace('.', ',') }}</p>
-                </div>
-            </a>
+        {% set non_offer_products = produtos | rejectattr('em_oferta') | list %}
+        
+        {% if non_offer_products %}
+            {% for produto in non_offer_products %}
+            <div class="product-card">
+                <a href="{{ url_for('produto_detalhes', id_produto=produto.id) }}">
+                    <div class="product-image-placeholder">
+                        {% if produto.img_path_1 %}
+                            {% set filename = produto.img_path_1.split('/')[-1] %}
+                            <img src="{{ url_for('static', filename='uploads/' + filename) }}" alt="{{ produto.nome }}">
+                        {% else %}
+                            <img src="{{ url_for('static', filename='placeholder.png') }}" alt="Imagem não disponível">
+                        {% endif %}
+                    </div>
+                    <div class="product-details">
+                        <h3 class="product-title">{{ produto.nome }}</h3>
+                        <p class="product-description">
+                            {{ produto.descricao or "Clique para ver detalhes." }}
+                        </p>
+                        <p class="product-price">R$ {{ "%.2f"|format(produto.preco)|replace('.', ',') }}</p>
+                    </div>
+                </a>
 
-            <a href="{{ url_for('comprar_produto', id_produto=produto.id) }}" class="btn-compra">
-                Comprar Agora
-            </a>
-        </div>
-        {% endfor %}
+                <a href="{{ url_for('comprar_produto', id_produto=produto.id) }}" class="btn-compra">
+                    Comprar Agora
+                </a>
+            </div>
+            {% endfor %}
+        {% else %}
+             {% if not ofertas %}
+                <h3 style="width: 100%; text-align: center; padding: 50px;">Nenhum produto cadastrado.</h3>
+            {% endif %}
+        {% endif %}
 
     </section>
 
-    {% if not produtos %}
-        <h3 style="width: 100%; text-align: center; padding: 50px;">Nenhum produto cadastrado.</h3>
-    {% endif %}
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const countdownElements = document.querySelectorAll('.countdown-timer');
+
+            countdownElements.forEach(element => {
+                // Lê o timestamp ISO do atributo data-time
+                const targetTime = new Date(element.dataset.time).getTime(); 
+                const id = element.id;
+
+                const interval = setInterval(() => {
+                    const now = new Date().getTime();
+                    const distance = targetTime - now;
+
+                    if (distance < 0) {
+                        clearInterval(interval);
+                        document.getElementById(id).innerHTML = "OFERTA ENCERRADA";
+                        // Ação opcional: Desabilitar botão de compra ou mostrar preço normal.
+                        return;
+                    }
+
+                    // Cálculos de tempo (Dias, Horas, Minutos, Segundos)
+                    const days = Math.floor(distance / (1000 * 60 * 60 * 24));
+                    const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                    const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+                    const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+
+                    // Formatação (adiciona zero à esquerda se menor que 10)
+                    const formattedTime = 
+                        (days > 0 ? days + "d " : "") + 
+                        hours.toString().padStart(2, '0') + "h : " +
+                        minutes.toString().padStart(2, '0') + "m : " +
+                        seconds.toString().padStart(2, '0') + "s";
+
+                    document.getElementById(id).innerHTML = "Tempo restante: " + formattedTime;
+                }, 1000);
+            });
+        });
+    </script>
 {% endblock %}

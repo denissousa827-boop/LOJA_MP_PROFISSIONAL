@@ -3,97 +3,279 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}Minha Loja Oficial{% endblock %}</title>
+    <title>{% block title %}{{ config.get('titulo_site', 'Minha Loja Online') }}{% endblock %}</title>
     
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&display=swap">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        /* Variáveis de Cores Padrão */
+        :root {
+            --header-bg: {{ config.get('header_color', '#181818') }};
+            --footer-bg: {{ config.get('footer_color', '#303030') }};
+            --link-color: white; /* Cor do link padrão para cabeçalhos escuros */
+            --link-hover: #ffcc00; /* Dourado/Amarelo para destaque */
+        }
+
+        /* Estilos do Body e Container */
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f8f8f8;
+            color: #333;
+        }
+        .container {
+            width: 90%;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 15px;
+        }
+
+        /* --- CABEÇALHO MODERNO --- */
+        header {
+            background-color: var(--header-bg);
+            padding: 15px 0;
+            color: var(--link-color);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        /* LOGO */
+        .logo a {
+            font-size: 1.8em;
+            font-weight: bold;
+            text-decoration: none;
+            color: var(--link-color);
+        }
+        .logo img {
+            max-height: 40px; /* Ajuste o tamanho da logo */
+            vertical-align: middle;
+        }
+
+        /* MENU DE NAVEGAÇÃO */
+        nav a {
+            color: var(--link-color);
+            text-decoration: none;
+            margin-left: 25px;
+            font-size: 1em;
+            padding: 5px 0;
+            position: relative;
+            transition: color 0.2s;
+        }
+
+        nav a:hover {
+            color: var(--link-hover);
+        }
+        
+        /* LINHA DE DESTAQUE NO HOVER */
+        nav a::after {
+            content: '';
+            position: absolute;
+            width: 0;
+            height: 2px;
+            bottom: -5px;
+            left: 0;
+            background-color: var(--link-hover);
+            transition: width 0.3s;
+        }
+
+        nav a:hover::after {
+            width: 100%;
+        }
+
+        /* Ícone do Carrinho (se houver) */
+        .cart-icon {
+            font-size: 1.5em; /* Aumenta um pouco */
+            color: var(--link-color);
+            text-decoration: none;
+            margin-left: 20px;
+        }
+
+        /* --- RODAPÉ --- */
+        footer {
+            background-color: var(--footer-bg);
+            color: white;
+            padding: 30px 0;
+            margin-top: 40px;
+            font-size: 0.9em;
+        }
+        .footer-links a {
+            color: #ccc;
+            text-decoration: none;
+            display: block;
+            margin-bottom: 5px;
+        }
+        .footer-links a:hover {
+            color: var(--link-hover);
+        }
+        .footer-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 20px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid #444;
+        }
+        .footer-bottom {
+            text-align: center;
+            padding-top: 15px;
+            font-size: 0.8em;
+        }
+        
+        .social-icons a {
+            color: white;
+            margin-right: 15px;
+            font-size: 1.2em;
+        }
+        .social-icons a:hover {
+            color: var(--link-hover);
+        }
+        
+        /* Estilos para a seção de oferta em homepage.html */
+        .product-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+            padding: 20px 0;
+        }
+        .product-card {
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            overflow: hidden;
+            background: white;
+            transition: box-shadow 0.3s;
+            text-align: center;
+        }
+        .product-card:hover {
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        .product-image-placeholder img {
+            width: 100%;
+            height: auto;
+            max-height: 200px;
+            object-fit: contain;
+            background-color: #f0f0f0;
+        }
+        .btn-compra {
+            display: block;
+            width: 90%;
+            margin: 10px auto 15px auto;
+            padding: 10px;
+            background-color: #007bff;
+            color: white;
+            text-align: center;
+            text-decoration: none;
+            border-radius: 5px;
+            font-weight: bold;
+            transition: background-color 0.2s;
+        }
+        .btn-compra:hover {
+            background-color: #0056b3;
+        }
+        
+        /* NOVO: Estilos de preço para oferta */
+        .old-price {
+            text-decoration: line-through;
+            color: gray;
+            display: block;
+            font-size: 0.9em;
+        }
+        .price {
+            color: darkred;
+            font-size: 1.4em;
+            font-weight: bold;
+        }
+    </style>
 </head>
 <body>
 
-    <header class="header">
+    <header>
         <div class="container header-content">
-            <a href="{{ url_for('homepage') }}" class="logo">Minha Loja Oficial</a>
+            <div class="logo">
+                <a href="{{ url_for('homepage') }}">
+                    {% if config.get('logo_path') %}
+                        {% set logo_filename = config['logo_path'].split('/')[-1] %}
+                        <img src="{{ url_for('static', filename='uploads/' + logo_filename) }}" alt="Logo da Loja">
+                    {% else %}
+                        Minha Loja Oficial
+                    {% endif %}
+                </a>
+            </div>
+
             <nav>
                 <a href="{{ url_for('homepage') }}">Produtos</a>
-                <a href="{{ url_for('pagina_info', chave_config='contato_email') }}">Contato</a> 
-                <a href="#"><i class="fas fa-shopping-cart"></i> Carrinho</a>
+                <a href="{{ url_for('pagina_info', chave_config='contato_email') }}">Contato</a>
+                <a href="#" class="cart-icon">🛒 Carrinho</a>
             </nav>
         </div>
     </header>
 
-    <main class="main-content container">
+    <main class="container">
         {% block content %}{% endblock %}
     </main>
 
-    <footer class="footer-woozen">
-        <div class="container">
-            <div class="footer-top">
-                <div class="footer-column customer-service">
-                    <h4 style="color: #00bcd4;">Minha Loja Oficial</h4>
-                    <p>Atendimento ao Cliente:</p>
-                    <p>{{ config.get('contato_email', 'Email não configurado') }}</p>
-                    <p>WhatsApp: **{{ config.get('contato_whatsapp', 'WhatsApp não configurado') }}**</p>
-                    <div class="social-icons">
-                        <a href="#"><i class="fab fa-facebook-f"></i></a>
-                        <a href="#"><i class="fab fa-twitter"></i></a>
-                        <a href="#"><i class="fab fa-instagram"></i></a>
-                        <a href="#"><i class="fab fa-pinterest-p"></i></a>
-                    </div>
-                </div>
-
-                <div class="footer-column">
-                    <h4>Institucional</h4>
-                    <ul>
-                        <li><a href="{{ url_for('pagina_info', chave_config='quem_somos') }}">Quem Somos</a></li>
-                        <li><a href="#">Fale Conosco</a></li>
-                        <li><a href="{{ url_for('pagina_info', chave_config='politica_privacidade') }}">Política de Privacidade</a></li>
-                        <li><a href="{{ url_for('pagina_info', chave_config='politica_reembolso') }}">Política de Reembolso</a></li>
-                        <li><a href="{{ url_for('admin_login') }}">Acesso Administrativo</a></li>
-                    </ul>
-                </div>
-
-                <div class="footer-column">
-                    <h4>Dúvidas Gerais</h4>
-                    <ul>
-                        <li><a href="{{ url_for('pagina_info', chave_config='formas_pagamento') }}">Formas de Pagamento</a></li>
-                        <li><a href="{{ url_for('pagina_info', chave_config='entrega_frete') }}">Entrega e Frete</a></li>
-                        <li><a href="{{ url_for('pagina_info', chave_config='trocas_devolucoes') }}">Trocas e Devoluções</a></li>
-                        <li><a href="{{ url_for('pagina_info', chave_config='garantia_seguranca') }}">Garantia e Segurança</a></li>
-                        <li><a href="{{ url_for('pagina_info', chave_config='rastrear_pedido') }}">Rastrear seu Pedido</a></li>
-                    </ul>
-                </div>
-
-                <div class="footer-column">
-                    <h4>Assine Nossa Newsletter</h4>
-                    <p>Receba nossas promoções, atualizações e notícias.</p>
-                    <div class="newsletter-form">
-                        <form action="{{ url_for('cadastro_cliente') }}" method="GET">
-                            <input type="email" placeholder="Seu E-mail" disabled>
-                            <button type="submit">ASSINAR (Cadastro de Cliente)</button>
-                        </form>
-                    </div>
-                </div>
-            </div> 
+    <footer>
+        <div class="container footer-grid">
             
-            <div class="footer-bottom">
-                <div class="secure-badges">
-                    <img src="https://via.placeholder.com/100x40?text=Norton+Secured" alt="Norton Secured">
-                    <img src="https://via.placeholder.com/100x40?text=Google+Seguro" alt="Google Site Seguro">
-                    <a href="#" style="color: white; font-weight: bold; margin-left: 20px;">Reclame AQUI</a>
+            <div>
+                <h4>MINHA LOJA OFICIAL</h4>
+                <p>Atendimento ao Cliente:</p>
+                <p>Suporte: {{ config.get('contato_email', 'email@exemplo.com') }}</p>
+                <p>WhatsApp: {{ config.get('contato_whatsapp', '(00) 00000-0000') }}</p>
+                
+                <div class="social-icons" style="margin-top: 10px;">
+                    <a href="#">F</a> 
+                    <a href="#">T</a> 
+                    <a href="#">I</a> 
+                    <a href="#">P</a>
                 </div>
-
-                <div class="payment-badges">
-                    {% for caminho in banner_pagamento %}
-                        <img src="{{ url_for('static', filename=caminho) }}" alt="Banner {{ caminho.split('/')[-1] }}">
-                    {% endfor %}
-                </div>
-
-                <p>© 2025 Tema Minha Loja Oficial | Seu CNPJ aqui!</p>
-                <p>Preços e condições de pagamento exclusivos para compras neste site oficial...</p>
-                <p>E-commerce © E-commerce por DENIS</p>
             </div>
+
+            <div>
+                <h4>INSTITUCIONAL</h4>
+                <div class="footer-links">
+                    <a href="{{ url_for('pagina_info', chave_config='quem_somos') }}">Quem Somos</a>
+                    <a href="{{ url_for('pagina_info', chave_config='politica_privacidade') }}">Política de Privacidade</a>
+                    <a href="{{ url_for('pagina_info', chave_config='politica_reembolso') }}">Política de Reembolso</a>
+                    <a href="{{ url_for('admin_login') }}">Acesso Administrativo</a>
+                </div>
+            </div>
+            
+            <div>
+                <h4>DÚVIDAS GERAIS</h4>
+                <div class="footer-links">
+                    <a href="{{ url_for('pagina_info', chave_config='formas_pagamento') }}">Formas de Pagamento</a>
+                    <a href="{{ url_for('pagina_info', chave_config='entrega_frete') }}">Entrega e Frete</a>
+                    <a href="{{ url_for('pagina_info', chave_config='trocas_devolucoes') }}">Trocas e Devoluções</a>
+                    <a href="{{ url_for('pagina_info', chave_config='rastrear_pedido') }}">Rastrear seu Pedido</a>
+                </div>
+            </div>
+
+            <div>
+                <h4>ASSINE NOSSA NEWSLETTER</h4>
+                <p>Receba nossas promoções, atualizações e notícias.</p>
+                <a href="{{ url_for('cadastro_cliente') }}" class="btn-compra" style="background: #ffcc00; color: #333; margin: 10px 0; width: 100%;">
+                    ASSINAR (Cadastro de Cliente)
+                </a>
+                
+                <div style="margin-top: 15px;">
+                    {% if banner_pagamento %}
+                        {% for path in banner_pagamento %}
+                            {% set filename = path.split('/')[-1] %}
+                            <img src="{{ url_for('static', filename='uploads/' + filename) }}" alt="Bandeiras de Pagamento" style="max-height: 25px; margin-right: 5px; vertical-align: middle;">
+                        {% endfor %}
+                    {% endif %}
+                </div>
+            </div>
+
+        </div>
+
+        <div class="footer-bottom">
+            &copy; 2025 {{ config.get('titulo_site', 'Minha Loja Oficial') }} | Todos os direitos reservados.
         </div>
     </footer>
-    </body>
+
+</body>
 </html>

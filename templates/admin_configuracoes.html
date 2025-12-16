@@ -6,49 +6,94 @@
     <title>Configurações da Loja</title>
     <style>
         body { font-family: Arial, sans-serif; padding: 20px; background-color: #f4f4f4; }
-        .container { max-width: 900px; margin: 0 auto; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+        .container { max-width: 900px; margin: 0 auto; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
         h2 { color: purple; border-bottom: 2px solid #eee; padding-bottom: 10px; }
         h3 { color: #007bff; margin-top: 30px; border-bottom: 1px dashed #ccc; padding-bottom: 5px; }
         label { display: block; margin-top: 15px; margin-bottom: 5px; font-weight: bold; }
-        input[type="text"], textarea { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
+        input[type="text"], input[type="color"], input[type="file"], textarea { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
         textarea { resize: vertical; min-height: 100px; }
-        button[type="submit"] { 
+        button[type="submit"] {
             display: block;
-            width: 100%; 
-            padding: 15px; 
-            background-color: purple; 
-            color: white; 
-            border: none; 
-            border-radius: 4px; 
-            cursor: pointer; 
-            font-size: 1.2em; 
+            width: 100%;
+            padding: 15px;
+            background-color: purple;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 1.2em;
             margin-top: 30px;
             transition: background-color 0.2s;
         }
         button[type="submit"]:hover { background-color: #6a0dad; }
         .success { background-color: #d4edda; color: #155724; padding: 10px; border-radius: 4px; margin-bottom: 20px; }
+        .layout-config { background-color: #e6f7ff; border: 1px solid #91d5ff; padding: 15px; border-radius: 5px; margin-top: 20px;}
+        .color-group { display: flex; gap: 20px; }
+        .color-group > div { flex: 1; }
+        .color-group input[type="color"] { width: 100%; height: 40px; padding: 0; border: none; }
+        .current-file { font-size: 0.9em; color: gray; margin-bottom: 10px; }
     </style>
 </head>
 <body>
     <div class="container">
         <h2>⚙️ Configurações e Conteúdo Estático da Loja</h2>
         <p><a href="{{ url_for('admin_dashboard') }}">← Voltar para o Dashboard</a></p>
-        
+
         {% if success %}
             <div class="success">{{ success }}</div>
         {% endif %}
 
-        <form method="POST">
+        <form method="POST" enctype="multipart/form-data">
+
+            <div class="layout-config">
+                <h3 style="color: #007bff; margin-top: 0;">🎨 Layout e Design (Logotipo e Cores)</h3>
+                
+                <label for="logo_file">Logotipo da Loja (.png, .jpg, .svg):</label>
+                {% if config.get('logo_path') %}
+                    {% set logo_filename = config['logo_path'].split('/')[-1] %}
+                    <p class="current-file">Arquivo atual: <a href="{{ url_for('static', filename='uploads/' + logo_filename) }}" target="_blank">{{ logo_filename }}</a></p>
+                {% else %}
+                    <p class="current-file">Nenhum logo cadastrado.</p>
+                {% endif %}
+                <input type="file" id="logo_file" name="logo_file" accept="image/*">
+                
+                <hr>
+                
+                <label for="banner_file">Banner Principal (1200x300 recomendado):</label>
+                 {% if config.get('banner_img') %}
+                    {% set banner_filename = config['banner_img'].split('/')[-1] %}
+                    <p class="current-file">Arquivo atual: <a href="{{ url_for('static', filename='uploads/' + banner_filename) }}" target="_blank">{{ banner_filename }}</a></p>
+                {% else %}
+                    <p class="current-file">Nenhum banner cadastrado.</p>
+                {% endif %}
+                <input type="file" id="banner_file" name="banner_file" accept="image/*">
+
+
+                <div class="color-group">
+                    <div>
+                        <label for="header_color">Cor de Fundo do Cabeçalho:</label>
+                        <input type="color" id="header_color" name="header_color" 
+                               value="{{ config.get('header_color', '#181818') }}">
+                    </div>
+                    <div>
+                        <label for="footer_color">Cor de Fundo do Rodapé:</label>
+                        <input type="color" id="footer_color" name="footer_color" 
+                               value="{{ config.get('footer_color', '#303030') }}">
+                    </div>
+                </div>
+            </div>
             
+            <hr>
+
             <h3>Informações de Contato</h3>
             <label for="contato_email">Email de Suporte:</label>
-            <input type="text" id="contato_email" name="contato_email" value="{{ config.get('contato_email', '') }}" required>
+            <input type="text" id="contato_email" name="contato_email" value="{{ config.get('contato_email', '') }}">
 
             <label for="contato_whatsapp">WhatsApp (Ex: (99) 99999-9999):</label>
-            <input type="text" id="contato_whatsapp" name="contato_whatsapp" value="{{ config.get('contato_whatsapp', '') }}" required>
+            <input type="text" id="contato_whatsapp" name="contato_whatsapp" value="{{ config.get('contato_whatsapp', '') }}">
 
             <h3>Páginas Institucionais (Rodapé e Páginas Internas)</h3>
-            
+
             <label for="quem_somos">Quem Somos (Texto curto ou link):</label>
             <textarea id="quem_somos" name="quem_somos">{{ config.get('quem_somos', '') }}</textarea>
 
@@ -59,24 +104,24 @@
             <textarea id="politica_reembolso" name="politica_reembolso">{{ config.get('politica_reembolso', '') }}</textarea>
 
             <h3>Dúvidas Gerais / Links Úteis</h3>
-            
+
             <label for="formas_pagamento">Formas de Pagamento (Texto Completo):</label>
             <textarea id="formas_pagamento" name="formas_pagamento">{{ config.get('formas_pagamento', '') }}</textarea>
 
             <label for="entrega_frete">Entrega e Frete (Texto Completo):</label>
             <textarea id="entrega_frete" name="entrega_frete">{{ config.get('entrega_frete', '') }}</textarea>
-            
+
             <label for="trocas_devolucoes">Trocas e Devoluções (Texto Completo):</label>
             <textarea id="trocas_devolucoes" name="trocas_devolucoes">{{ config.get('trocas_devolucoes', '') }}</textarea>
-            
+
             <label for="garantia_seguranca">Garantia e Segurança (Texto Completo):</label>
             <textarea id="garantia_seguranca" name="garantia_seguranca">{{ config.get('garantia_seguranca', '') }}</textarea>
-            
+
             <label for="rastrear_pedido">Rastrear seu Pedido (Texto/Link):</label>
             <textarea id="rastrear_pedido" name="rastrear_pedido">{{ config.get('rastrear_pedido', '') }}</textarea>
 
-            <h3 style="color: #00bcd4;">Imagens de Pagamento e Selos (Banners)</h3>
-            <p>Liste os caminhos dos arquivos das bandeiras de pagamento e selos, separando-os por vírgula. Ex: `assets/pix.png,assets/visa.png,assets/norton.png`</p>
+            <h3 style="color: #00bcd4;">Imagens de Pagamento e Selos (Rodapé)</h3>
+            <p>Liste os caminhos dos arquivos das bandeiras de pagamento e selos, separando-os por vírgula.</p>
             <label for="banner_pagamento">Caminhos dos Banners (Separe por vírgula):</label>
             <input type="text" id="banner_pagamento" name="banner_pagamento" value="{{ config.get('banner_pagamento', '') }}">
 
