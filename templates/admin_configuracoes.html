@@ -47,42 +47,42 @@
 
             <div class="layout-config">
                 <h3 style="color: #007bff; margin-top: 0;">🎨 Layout e Design (Logotipo e Cores)</h3>
-                
+
                 <label for="logo_file">Logotipo da Loja (.png, .jpg, .svg):</label>
-                {% if config.get('logo_path') %}
-                    {% set logo_filename = config['logo_path'].split('/')[-1] %}
-                    <p class="current-file">Arquivo atual: <a href="{{ url_for('static', filename='uploads/' + logo_filename) }}" target="_blank">{{ logo_filename }}</a></p>
+                {% if config.get('logo_img') %}
+                    {% set logo_filename = config['logo_img'].split('/')[-1] %}
+                    <p class="current-file">Arquivo atual: <a href="{{ config['logo_img'] }}" target="_blank">{{ logo_filename }}</a></p>
                 {% else %}
                     <p class="current-file">Nenhum logo cadastrado.</p>
                 {% endif %}
-                <input type="file" id="logo_file" name="logo_file" accept="image/*">
-                
+                <input type="file" id="logo_file" name="logo_img" accept="image/*">
+
                 <hr>
-                
+
                 <label for="banner_file">Banner Principal (1200x300 recomendado):</label>
-                 {% if config.get('banner_img') %}
+                {% if config.get('banner_img') %}
                     {% set banner_filename = config['banner_img'].split('/')[-1] %}
-                    <p class="current-file">Arquivo atual: <a href="{{ url_for('static', filename='uploads/' + banner_filename) }}" target="_blank">{{ banner_filename }}</a></p>
+                    <p class="current-file">Arquivo atual: <a href="{{ config['banner_img'] }}" target="_blank">{{ banner_filename }}</a></p>
                 {% else %}
                     <p class="current-file">Nenhum banner cadastrado.</p>
                 {% endif %}
-                <input type="file" id="banner_file" name="banner_file" accept="image/*">
+                <input type="file" id="banner_file" name="banner_img" accept="image/*">
 
 
                 <div class="color-group">
                     <div>
                         <label for="header_color">Cor de Fundo do Cabeçalho:</label>
-                        <input type="color" id="header_color" name="header_color" 
-                               value="{{ config.get('header_color', '#181818') }}">
+                        <input type="color" id="header_color" name="header_color"
+                                value="{{ config.get('header_color', '#181818') }}">
                     </div>
                     <div>
                         <label for="footer_color">Cor de Fundo do Rodapé:</label>
-                        <input type="color" id="footer_color" name="footer_color" 
-                               value="{{ config.get('footer_color', '#303030') }}">
+                        <input type="color" id="footer_color" name="footer_color"
+                                value="{{ config.get('footer_color', '#303030') }}">
                     </div>
                 </div>
             </div>
-            
+
             <hr>
 
             <h3>Informações de Contato</h3>

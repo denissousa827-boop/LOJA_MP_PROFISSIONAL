@@ -24,20 +24,20 @@
     <div class="container">
         <h2>Bem-vindo, {{ session['username'] }}!</h2>
         <div class="user-info">
-            <a href="{{ url_for('admin_logout') }}">Sair</a> | 
+            <a href="{{ url_for('admin_logout') }}">Sair</a> |
             <a href="{{ url_for('homepage') }}">Ver Loja</a>
         </div>
-        
+
         <h3 style="color: purple; margin-top: 20px;">Configurações e Conteúdo da Loja</h3>
         <div class="actions">
             <p><a href="{{ url_for('admin_configuracoes') }}" style="color: purple;">⚙️ Editar Textos Institucionais e Contatos</a></p>
         </div>
-        
+
         <h3>Gestão de Produtos</h3>
         <div class="actions">
             <p><a href="{{ url_for('admin_edit') }}" style="color: #28a745;">➕ Adicionar Novo Produto</a></p>
         </div>
-        
+
         <table>
             <thead>
                 <tr>
@@ -68,7 +68,7 @@
         <div class="actions">
             <p><a href="{{ url_for('admin_clientes') }}" style="color: #007bff;">👥 Visualizar Clientes Cadastrados (Newsletter)</a></p>
         </div>
-        
+
     </div>
 </body>
 </html>

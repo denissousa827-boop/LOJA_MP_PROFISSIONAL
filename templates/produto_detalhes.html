@@ -3,23 +3,172 @@
 {% block title %}{{ produto.nome }} | Minha Loja Oficial{% endblock %}
 
 {% block content %}
-    <div class="product-detail-container">
+<style>
+    /* Layout de Duas Colunas Profissional */
+    .product-detail-wrapper {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 40px;
+        margin: 30px auto;
+        max-width: 1200px;
+        padding: 20px;
+        background: #fff;
+        border-radius: 12px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+    }
 
+    /* Lado Esquerdo: Galeria */
+    .media-gallery {
+        flex: 1.2;
+        min-width: 350px;
+    }
+
+    .main-image {
+        width: 100%;
+        border-radius: 10px;
+        overflow: hidden;
+        border: 1px solid #f0f0f0;
+        background: #f9f9f9;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 400px;
+    }
+
+    .main-image img {
+        max-width: 100%;
+        max-height: 500px;
+        object-fit: contain;
+        transition: transform 0.3s ease;
+    }
+
+    .thumbnails {
+        display: flex;
+        gap: 12px;
+        margin-top: 15px;
+        overflow-x: auto;
+        padding-bottom: 10px;
+    }
+
+    .thumbnails img {
+        width: 85px;
+        height: 85px;
+        object-fit: cover;
+        border-radius: 6px;
+        cursor: pointer;
+        border: 2px solid #eee;
+        transition: 0.2s;
+    }
+
+    .thumbnails img:hover {
+        border-color: #007bff;
+        transform: translateY(-2px);
+    }
+
+    /* Lado Direito: Informações e Preço */
+    .info-side {
+        flex: 1;
+        min-width: 320px;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .info-side h1 {
+        font-size: 2.2rem;
+        color: #222;
+        margin-bottom: 15px;
+        line-height: 1.2;
+    }
+
+    .price-container {
+        padding: 20px;
+        background: #fcfcfc;
+        border-radius: 10px;
+        border-left: 5px solid #28a745;
+        margin-bottom: 25px;
+    }
+
+    .product-price {
+        font-size: 2.5rem;
+        font-weight: 800;
+        color: #28a745;
+        margin: 0;
+    }
+
+    .description-full {
+        font-size: 1rem;
+        line-height: 1.6;
+        color: #555;
+        margin-bottom: 30px;
+    }
+
+    .btn-compra {
+        display: block;
+        background: #28a745;
+        color: #fff;
+        text-align: center;
+        padding: 18px;
+        font-size: 1.4rem;
+        font-weight: bold;
+        text-decoration: none;
+        border-radius: 8px;
+        text-transform: uppercase;
+        transition: 0.3s;
+        box-shadow: 0 4px 10px rgba(40, 167, 69, 0.3);
+    }
+
+    .btn-compra:hover {
+        background: #218838;
+        transform: translateY(-3px);
+        box-shadow: 0 6px 15px rgba(40, 167, 69, 0.4);
+    }
+
+    /* Seção do Vídeo Abaixo */
+    .video-container {
+        width: 100%;
+        margin-top: 40px;
+        text-align: center;
+        border-top: 1px solid #eee;
+        padding-top: 30px;
+    }
+
+    .video-container video {
+        max-width: 100%;
+        width: 800px;
+        border-radius: 12px;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+    }
+
+    /* Responsividade para Celular */
+    @media (max-width: 768px) {
+        .product-detail-wrapper {
+            flex-direction: column;
+        }
+        .main-image {
+            min-height: 300px;
+        }
+    }
+</style>
+
+<div class="container">
+    <div class="product-detail-wrapper">
+        
         <div class="media-gallery">
             <div class="main-image">
                 {% if imagens[0] %}
                     {% set filename = imagens[0].split('/')[-1] %}
-                    <img id="current-image" src="{{ url_for('static', filename='uploads/' + filename) }}" alt="{{ produto.nome }} - Imagem Principal">
+                    <img id="current-image" src="{{ url_for('static', filename='uploads/' + filename) }}" alt="{{ produto.nome }}">
                 {% else %}
                     <img id="current-image" src="{{ url_for('static', filename='placeholder.png') }}" alt="Imagem não disponível">
                 {% endif %}
             </div>
+            
             <div class="thumbnails">
                 {% for img_path in imagens %}
                     {% if img_path %}
                         {% set filename = img_path.split('/')[-1] %}
                         {% set src_path = url_for('static', filename='uploads/' + filename) %}
-                        <img src="{{ src_path }}" alt="{{ produto.nome }} - Miniatura {{ loop.index }}" onclick="changeMainImage('{{ src_path }}')">
+                        <img src="{{ src_path }}" alt="Miniatura {{ loop.index }}" onclick="changeMainImage('{{ src_path }}')">
                     {% endif %}
                 {% endfor %}
             </div>
@@ -27,24 +176,25 @@
 
         <div class="info-side">
             <h1>{{ produto.nome }}</h1>
-            
-            <p class="product-price">R$ {{ "%.2f"|format(produto.preco)|replace('.', ',') }}</p>
 
-            <p class="description-full">
-                <strong>Descrição Completa:</strong>
-                <br>
-                {{ produto.descricao or "Descrição completa não disponível." }}
-            </p>
+            <div class="price-container">
+                <p class="product-price">R$ {{ "%.2f"|format(produto.preco)|replace('.', ',') }}</p>
+                <small style="color: #888;">Pagamento seguro via Mercado Pago</small>
+            </div>
 
-            <a href="{{ url_for('comprar_produto', id_produto=produto.id) }}" class="btn-compra btn-detail">
+            <div class="description-full">
+                <strong>📋 Descrição Detalhada:</strong>
+                <p>{{ produto.descricao or "Descrição completa não disponível." }}</p>
+            </div>
+
+            <a href="{{ url_for('comprar_produto', id_produto=produto.id) }}" class="btn-compra">
                 Comprar Agora
             </a>
-
-            </div>
+        </div>
 
         {% if produto.video_path %}
         <div class="video-container">
-            <h2>Vídeo de Apresentação</h2>
+            <h2>🎥 Vídeo de Apresentação</h2>
             {% set video_filename = produto.video_path.split('/')[-1] %}
             <video controls>
                 <source src="{{ url_for('static', filename='uploads/' + video_filename) }}" type="video/mp4">
@@ -54,11 +204,17 @@
         {% endif %}
 
     </div>
+</div>
 
-    <script>
-        // Função para trocar a imagem principal
-        function changeMainImage(src) {
-            document.getElementById('current-image').src = src;
-        }
-    </script>
+<script>
+    function changeMainImage(src) {
+        const mainImg = document.getElementById('current-image');
+        mainImg.style.opacity = '0'; // Efeito suave de transição
+        setTimeout(() => {
+            mainImg.src = src;
+            mainImg.style.opacity = '1';
+        }, 150);
+    }
+</script>
+
 {% endblock %}
