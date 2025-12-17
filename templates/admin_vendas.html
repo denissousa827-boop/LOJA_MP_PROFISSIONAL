@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+{% block title %}Gerenciar Vendas - Painel Admin{% endblock %}
+
+{% block content %}
+<style>
+    .status-badge {
+        font-size: 10px;
+        padding: 2px 8px;
+        border-radius: 4px;
+        text-transform: uppercase;
+        font-weight: bold;
+    }
+    .status-pago { background: #e6f7ee; color: #00a650; }
+    .status-pendente { background: #fff5e6; color: #ffad00; }
+    .venda-card {
+        text-decoration: none; 
+        color: inherit; 
+        display: block; 
+        padding: 15px; 
+        border-bottom: 1px solid #eee;
+        transition: background 0.2s;
+    }
+    .venda-card:active { background-color: #f0f0f0; }
+</style>
+
+<div class="container" style="padding-top: 15px; padding-bottom: 50px; min-height: 100vh;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+        <h2 style="font-size: 18px; margin: 0; display: flex; align-items: center; gap: 8px;">
+            <i class="fa fa-shopping-cart" style="color: #3483fa;"></i> Vendas Realizadas
+        </h2>
+        <a href="{{ url_for('admin_dashboard') }}" style="font-size: 12px; color: #3483fa; text-decoration: none;">Voltar ao Início</a>
+    </div>
+
+    <div style="display: flex; gap: 10px; overflow-x: auto; padding-bottom: 15px; scrollbar-width: none;">
+        <div style="background: #3483fa; color: white; padding: 6px 15px; border-radius: 20px; font-size: 12px; white-space: nowrap;">Todas</div>
+        <div style="background: #fff; padding: 6px 15px; border-radius: 20px; font-size: 12px; border: 1px solid #ddd; white-space: nowrap; color: #666;">Pagas</div>
+        <div style="background: #fff; padding: 6px 15px; border-radius: 20px; font-size: 12px; border: 1px solid #ddd; white-space: nowrap; color: #666;">Pendentes</div>
+    </div>
+
+    <div style="background: #fff; border-radius: 8px; overflow: hidden; box-shadow: 0 1px 2px rgba(0,0,0,0.1);">
+        {% if vendas %}
+            {% for venda in vendas %}
+            <a href="{{ url_for('admin_detalhe_venda', id_venda=venda.id) }}" class="venda-card">
+                <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                    <div style="flex: 1;">
+                        <span style="font-size: 11px; color: #999;">Pedido #{{ venda.id }} • {{ venda.data }}</span>
+                        <div style="font-weight: bold; font-size: 14px; margin: 3px 0; color: #333;">
+                            {{ venda.nome_cliente }}
+                        </div>
+                        <div style="font-size: 12px; color: #666;">
+                            <i class="fa fa-box" style="font-size: 10px;"></i> {{ venda.produto_nome }} 
+                            <span style="color: #999; margin-left: 5px;">({{ venda.quantidade }} un.)</span>
+                        </div>
+                    </div>
+                    
+                    <div style="text-align: right; min-width: 80px;">
+                        <div style="font-weight: bold; color: #333; font-size: 14px;">R$ {{ "%.2f"|format(venda.valor_total) }}</div>
+                        
+                        {% if venda.status == 'pago' %}
+                            <span class="status-badge status-pago">Pago</span>
+                        {% else %}
+                            <span class="status-badge status-pendente">Pendente</span>
+                        {% endif %}
+                    </div>
+                </div>
+            </a>
+            {% endfor %}
+        {% else %}
+            <div style="padding: 60px 20px; text-align: center; color: #bbb; background: #fff;">
+                <i class="fa fa-receipt fa-3x" style="margin-bottom: 15px; opacity: 0.2;"></i>
+                <p style="font-size: 14px;">Nenhuma venda registrada até o momento.</p>
+                <a href="{{ url_for('homepage') }}" style="color: #3483fa; text-decoration: none; font-size: 13px;">Ver produtos da loja</a>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

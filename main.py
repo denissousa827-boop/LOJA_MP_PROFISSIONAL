@@ -10,7 +10,9 @@ from database import (
     add_or_update_produto, delete_produto, init_db,
     add_cliente, get_clientes, get_cliente_por_id, update_cliente, delete_cliente,
     get_configuracoes, update_configuracao,
-    get_produtos_em_oferta
+    get_produtos_em_oferta,
+    # --- NOVAS FUNÇÕES DO BANCO DE DADOS ---
+    get_vendas, get_venda_por_id, registrar_venda 
 )
 
 # ---------------- CONFIGURAÇÃO INICIAL ----------------
@@ -89,7 +91,7 @@ def produto_detalhes(id_produto):
     config, banner_pagamento = load_shop_config()
     if not produto:
         return redirect(url_for('homepage'))
-    
+
     # Lógica de expiração de oferta
     if produto['oferta_fim'] and datetime.datetime.now().isoformat() > produto['oferta_fim']:
         produto['em_oferta'] = 0
@@ -104,6 +106,18 @@ def comprar_produto(id_produto):
     produto = get_produto_por_id(id_produto)
     if not produto:
         return redirect(url_for('compra_errada'))
+
+    # --- REGISTRA A INTENÇÃO DE VENDA ---
+    # Nota: Como ainda não há um checkout com dados do cliente aqui, 
+    # registramos como 'Visitante' ou pegamos da sessão se houver.
+    registrar_venda(
+        nome_cliente="Interessado", 
+        email_cliente="n/a", 
+        whatsapp_cliente="n/a",
+        produto_nome=produto['nome'],
+        quantidade=1,
+        valor_total=produto['preco'] if not produto['em_oferta'] else produto['novo_preco']
+    )
 
     # Gera o link de pagamento real no Mercado Pago
     link_iniciar_pagamento = gerar_link_pagamento(produto)
@@ -149,6 +163,25 @@ def admin_dashboard():
     clientes = get_clientes()
     return render_template("admin_dashboard.html", produtos=produtos, clientes=clientes)
 
+# --- NOVA ROTA: LISTAGEM DE VENDAS ---
+@app.route("/admin/vendas")
+def admin_vendas():
+    if 'logged_in' not in session:
+        return redirect(url_for('admin_login'))
+    vendas_lista = get_vendas()
+    return render_template("admin_vendas.html", vendas=vendas_lista)
+
+# --- NOVA ROTA: DETALHES DA VENDA ---
+@app.route("/admin/venda/<int:id_venda>")
+def admin_detalhe_venda(id_venda):
+    if 'logged_in' not in session:
+        return redirect(url_for('admin_login'))
+    venda = get_venda_por_id(id_venda)
+    if not venda:
+        flash("Pedido não encontrado.")
+        return redirect(url_for('admin_vendas'))
+    return render_template("admin_detalhe_venda.html", venda=venda)
+
 @app.route("/admin/logout")
 def admin_logout():
     session.clear()
@@ -190,7 +223,7 @@ def admin_editar_cliente(id_cliente):
 def admin_edit(id_produto=None):
     if 'logged_in' not in session:
         return redirect(url_for('admin_login'))
-    
+
     produto = get_produto_por_id(id_produto) if id_produto else None
 
     if request.method == 'POST':
@@ -228,13 +261,13 @@ def admin_edit(id_produto=None):
 def admin_configuracoes():
     if 'logged_in' not in session:
         return redirect(url_for('admin_login'))
-    
+
     config = get_configuracoes()
     if request.method == 'POST':
-        keys = ['contato_email', 'contato_whatsapp', 'quem_somos', 'politica_privacidade', 
-                'politica_reembolso', 'formas_pagamento', 'entrega_frete', 'trocas_devolucoes', 
+        keys = ['contato_email', 'contato_whatsapp', 'quem_somos', 'politica_privacidade',
+                'politica_reembolso', 'formas_pagamento', 'entrega_frete', 'trocas_devolucoes',
                 'garantia_seguranca', 'rastrear_pedido', 'banner_pagamento', 'header_color', 'footer_color']
-        
+
         for key in keys:
             update_configuracao(key, request.form.get(key, ''))
 

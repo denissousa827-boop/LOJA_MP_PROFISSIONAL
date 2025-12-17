@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% block title %}Detalhes do Pedido #{{ venda.id }}{% endblock %}
+
+{% block content %}
+<div class="container" style="padding: 20px; padding-bottom: 100px; background-color: #f5f5f5; min-height: 100vh;">
+    <a href="{{ url_for('admin_vendas') }}" style="text-decoration: none; color: #3483fa; font-size: 14px; display: flex; align-items: center; gap: 5px; margin-bottom: 20px;">
+        <i class="fa fa-arrow-left"></i> Voltar para a lista
+    </a>
+
+    <div style="background: #fff; border-radius: 8px; padding: 20px; margin-bottom: 15px; box-shadow: 0 1px 2px rgba(0,0,0,0.1); border-left: 5px solid {% if venda.status == 'pago' %}#00a650{% else %}#ffad00{% endif %};">
+        <span style="font-size: 12px; color: #999; text-transform: uppercase;">Status do Pedido</span>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 5px;">
+            <strong style="font-size: 18px; color: #333;">
+                {% if venda.status == 'pago' %} Pago {% else %} Aguardando Pagamento {% endif %}
+            </strong>
+            <span style="font-size: 12px; color: #666;">ID #{{ venda.id }}</span>
+        </div>
+    </div>
+
+    <div style="background: #fff; border-radius: 8px; padding: 20px; margin-bottom: 15px; box-shadow: 0 1px 2px rgba(0,0,0,0.1);">
+        <h3 style="margin: 0 0 15px 0; font-size: 16px; color: #333; border-bottom: 1px solid #eee; padding-bottom: 10px;">
+            <i class="fa fa-user" style="color: #999;"></i> Dados do Comprador
+        </h3>
+        <p style="margin: 8px 0; font-size: 14px;"><strong>Nome:</strong> {{ venda.nome_cliente }}</p>
+        <p style="margin: 8px 0; font-size: 14px;"><strong>WhatsApp:</strong> <a href="https://wa.me/{{ venda.whatsapp_cliente }}" style="color: #3483fa; text-decoration: none;">{{ venda.whatsapp_cliente }}</a></p>
+        <p style="margin: 8px 0; font-size: 14px;"><strong>E-mail:</strong> {{ venda.email_cliente }}</p>
+        
+        <div style="margin-top: 15px; background: #f9f9f9; padding: 12px; border-radius: 6px; border: 1px dashed #ccc;">
+            <span style="font-size: 11px; color: #999; display: block; margin-bottom: 5px;">ENDEREÇO DE ENTREGA</span>
+            <p style="margin: 0; font-size: 13px; color: #555; line-height: 1.4;">{{ venda.endereco_completo }}</p>
+        </div>
+    </div>
+
+    <div style="background: #fff; border-radius: 8px; padding: 20px; box-shadow: 0 1px 2px rgba(0,0,0,0.1);">
+        <h3 style="margin: 0 0 15px 0; font-size: 16px; color: #333; border-bottom: 1px solid #eee; padding-bottom: 10px;">
+            <i class="fa fa-box" style="color: #999;"></i> Itens do Pedido
+        </h3>
+        <div style="display: flex; gap: 15px; align-items: center;">
+            <div style="width: 60px; height: 60px; background: #eee; border-radius: 4px; display: flex; align-items: center; justify-content: center;">
+                <i class="fa fa-image" style="color: #ccc;"></i>
+            </div>
+            <div style="flex: 1;">
+                <div style="font-weight: bold; font-size: 14px; color: #333;">{{ venda.produto_nome }}</div>
+                <div style="font-size: 12px; color: #888;">Quantidade: {{ venda.quantidade }} un.</div>
+            </div>
+            <div style="text-align: right;">
+                <div style="font-weight: bold; color: #333;">R$ {{ "%.2f"|format(venda.valor_total) }}</div>
+            </div>
+        </div>
+    </div>
+
+    <div style="position: fixed; bottom: 0; left: 0; width: 100%; background: #fff; border-top: 1px solid #ddd; padding: 15px; display: flex; gap: 10px; box-sizing: border-box; z-index: 1000;">
+        <button onclick="window.print()" style="flex: 1; background: #f0f0f0; border: none; padding: 12px; border-radius: 6px; font-weight: bold; color: #666;">
+            <i class="fa fa-print"></i> Imprimir
+        </button>
+        <a href="https://wa.me/{{ venda.whatsapp_cliente }}?text=Olá {{ venda.nome_cliente }}, seu pedido #{{ venda.id }} foi recebido!" 
+           style="flex: 2; background: #25d366; color: white; text-align: center; text-decoration: none; padding: 12px; border-radius: 6px; font-weight: bold; display: flex; align-items: center; justify-content: center; gap: 8px;">
+            <i class="fa fa-whatsapp"></i> Chamar no Zap
+        </a>
+    </div>
+</div>
+{% endblock %}
+

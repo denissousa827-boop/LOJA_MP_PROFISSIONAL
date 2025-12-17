@@ -58,12 +58,27 @@ def init_db():
         )
     """)
 
+    # --- NOVA TABELA: VENDAS (Para as rotas de admin) ---
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS vendas (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            data TEXT,
+            nome_cliente TEXT,
+            email_cliente TEXT,
+            whatsapp_cliente TEXT,
+            produto_nome TEXT,
+            quantidade INTEGER,
+            valor_total REAL,
+            status TEXT DEFAULT 'pendente'
+        )
+    """)
+
     # --- CORREÇÃO DE ACESSO AO ADMIN ---
     admin_username = "utbdenis6752"
     admin_password = "675201"
     admin_hash = generate_password_hash(admin_password)
 
-    # Deleta o admin antigo e insere o novo com o hash correto para evitar erro de login
+    # Deleta o admin antigo e insere o novo com o hash correto
     cursor.execute("DELETE FROM users WHERE username=?", (admin_username,))
     cursor.execute("INSERT INTO users (username, password_hash) VALUES (?, ?)", (admin_username, admin_hash))
 
@@ -80,6 +95,34 @@ def init_db():
     conn.commit()
     conn.close()
 
+# --- FUNÇÕES DE VENDAS (NECESSÁRIAS PARA O NOVO MAIN.PY) ---
+
+def registrar_venda(nome_cliente, email_cliente, whatsapp_cliente, produto_nome, quantidade, valor_total):
+    """Salva uma nova venda no banco de dados."""
+    conn = create_connection()
+    cursor = conn.cursor()
+    data_atual = datetime.datetime.now().strftime("%d/%m/%Y %H:%M")
+    cursor.execute('''
+        INSERT INTO vendas (data, nome_cliente, email_cliente, whatsapp_cliente, produto_nome, quantidade, valor_total, status)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    ''', (data_atual, nome_cliente, email_cliente, whatsapp_cliente, produto_nome, quantidade, valor_total, 'pendente'))
+    conn.commit()
+    conn.close()
+
+def get_vendas():
+    """Retorna todas as vendas para a lista do admin."""
+    conn = create_connection()
+    vendas = conn.execute("SELECT * FROM vendas ORDER BY id DESC").fetchall()
+    conn.close()
+    return [dict(v) for v in vendas]
+
+def get_venda_por_id(id_venda):
+    """Busca detalhes de uma venda específica."""
+    conn = create_connection()
+    venda = conn.execute("SELECT * FROM vendas WHERE id=?", (id_venda,)).fetchone()
+    conn.close()
+    return dict(venda) if venda else None
+
 # --- FUNÇÕES DE LOGIN ---
 
 def get_user(username):
@@ -90,7 +133,6 @@ def get_user(username):
 
 def is_valid_login(username, password):
     user = get_user(username)
-    # Se o usuário existe, verificamos se a senha digitada bate com o hash no banco
     if user and check_password_hash(user['password_hash'], password):
         return dict(user)
     return None
@@ -124,12 +166,12 @@ def add_or_update_produto(id, nome, preco, descricao, img_paths, video_path, em_
     img_1, img_2, img_3, img_4 = img_paths + [None] * (4 - len(img_paths))
     oferta_status = 1 if em_oferta else 0
     data = (nome, preco, descricao, img_1, img_2, img_3, img_4, video_path, oferta_status, novo_preco, oferta_fim, id)
-    
+
     if get_produto_por_id(id):
         sql = "UPDATE produtos SET nome=?, preco=?, descricao=?, img_path_1=?, img_path_2=?, img_path_3=?, img_path_4=?, video_path=?, em_oferta=?, novo_preco=?, oferta_fim=? WHERE id=?"
     else:
         sql = "INSERT INTO produtos (nome, preco, descricao, img_path_1, img_path_2, img_path_3, img_path_4, video_path, em_oferta, novo_preco, oferta_fim, id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
-    
+
     cursor.execute(sql, data)
     conn.commit()
     conn.close()
