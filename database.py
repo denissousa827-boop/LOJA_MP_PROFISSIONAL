@@ -13,7 +13,7 @@ def create_connection():
     return conn
 
 def init_db():
-    """Inicializa o banco de dados e força a atualização da senha do admin."""
+    """Inicializa o banco de dados e configura as tabelas."""
     conn = create_connection()
     cursor = conn.cursor()
 
@@ -58,7 +58,7 @@ def init_db():
         )
     """)
 
-    # --- NOVA TABELA: VENDAS (Para as rotas de admin) ---
+    # Tabela de Vendas
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS vendas (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -73,16 +73,14 @@ def init_db():
         )
     """)
 
-    # --- CORREÇÃO DE ACESSO AO ADMIN ---
+    # --- CONFIGURAÇÃO DO ADMIN ---
     admin_username = "utbdenis6752"
     admin_password = "675201"
     admin_hash = generate_password_hash(admin_password)
 
-    # Deleta o admin antigo e insere o novo com o hash correto
-    cursor.execute("DELETE FROM users WHERE username=?", (admin_username,))
-    cursor.execute("INSERT INTO users (username, password_hash) VALUES (?, ?)", (admin_username, admin_hash))
+    cursor.execute("INSERT OR IGNORE INTO users (username, password_hash) VALUES (?, ?)", (admin_username, admin_hash))
 
-    # Preenche configurações iniciais
+    # Preenche configurações iniciais caso não existam
     config_keys = [
         ('contato_email', 'suporte@minhaloja.com.br'),
         ('contato_whatsapp', '(99) 99999-9999'),
@@ -95,10 +93,10 @@ def init_db():
     conn.commit()
     conn.close()
 
-# --- FUNÇÕES DE VENDAS (NECESSÁRIAS PARA O NOVO MAIN.PY) ---
+# --- FUNÇÕES DE VENDAS ---
 
 def registrar_venda(nome_cliente, email_cliente, whatsapp_cliente, produto_nome, quantidade, valor_total):
-    """Salva uma nova venda no banco de dados."""
+    """Salva uma nova venda e retorna o ID gerado para o Mercado Pago."""
     conn = create_connection()
     cursor = conn.cursor()
     data_atual = datetime.datetime.now().strftime("%d/%m/%Y %H:%M")
@@ -106,18 +104,30 @@ def registrar_venda(nome_cliente, email_cliente, whatsapp_cliente, produto_nome,
         INSERT INTO vendas (data, nome_cliente, email_cliente, whatsapp_cliente, produto_nome, quantidade, valor_total, status)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?)
     ''', (data_atual, nome_cliente, email_cliente, whatsapp_cliente, produto_nome, quantidade, valor_total, 'pendente'))
+    
+    id_venda = cursor.lastrowid # Pega o ID que acabou de ser criado
+    conn.commit()
+    conn.close()
+    return id_venda
+
+def atualizar_status_venda(id_venda, novo_status):
+    """Muda o status da venda (ex: para 'pago') quando o Webhook avisar."""
+    conn = create_connection()
+    cursor = conn.cursor()
+    # Forçamos o status para minúsculo para bater com o template (pago/pendente)
+    cursor.execute("UPDATE vendas SET status=? WHERE id=?", (novo_status.lower(), id_venda))
     conn.commit()
     conn.close()
 
 def get_vendas():
-    """Retorna todas as vendas para a lista do admin."""
+    """Retorna todas as vendas para o Admin."""
     conn = create_connection()
     vendas = conn.execute("SELECT * FROM vendas ORDER BY id DESC").fetchall()
     conn.close()
     return [dict(v) for v in vendas]
 
 def get_venda_por_id(id_venda):
-    """Busca detalhes de uma venda específica."""
+    """Busca detalhes de uma venda."""
     conn = create_connection()
     venda = conn.execute("SELECT * FROM vendas WHERE id=?", (id_venda,)).fetchone()
     conn.close()
@@ -137,7 +147,7 @@ def is_valid_login(username, password):
         return dict(user)
     return None
 
-# --- RESTANTE DAS FUNÇÕES (PRODUTOS, CLIENTES, CONFIG) ---
+# --- FUNÇÕES DE PRODUTOS ---
 
 def get_produtos():
     conn = create_connection()
@@ -162,17 +172,21 @@ def get_produto_por_id(id_produto):
 def add_or_update_produto(id, nome, preco, descricao, img_paths, video_path, em_oferta=0, novo_preco=None, oferta_fim=None):
     conn = create_connection()
     cursor = conn.cursor()
-    if not id: id = str(int(datetime.datetime.now().timestamp()))[-8:]
+    if not id: 
+        id = str(int(datetime.datetime.now().timestamp()))[-8:]
+    
     img_1, img_2, img_3, img_4 = img_paths + [None] * (4 - len(img_paths))
     oferta_status = 1 if em_oferta else 0
-    data = (nome, preco, descricao, img_1, img_2, img_3, img_4, video_path, oferta_status, novo_preco, oferta_fim, id)
-
+    
     if get_produto_por_id(id):
-        sql = "UPDATE produtos SET nome=?, preco=?, descricao=?, img_path_1=?, img_path_2=?, img_path_3=?, img_path_4=?, video_path=?, em_oferta=?, novo_preco=?, oferta_fim=? WHERE id=?"
+        sql = """UPDATE produtos SET nome=?, preco=?, descricao=?, img_path_1=?, img_path_2=?, 
+                 img_path_3=?, img_path_4=?, video_path=?, em_oferta=?, novo_preco=?, oferta_fim=? WHERE id=?"""
+        cursor.execute(sql, (nome, preco, descricao, img_1, img_2, img_3, img_4, video_path, oferta_status, novo_preco, oferta_fim, id))
     else:
-        sql = "INSERT INTO produtos (nome, preco, descricao, img_path_1, img_path_2, img_path_3, img_path_4, video_path, em_oferta, novo_preco, oferta_fim, id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
-
-    cursor.execute(sql, data)
+        sql = """INSERT INTO produtos (nome, preco, descricao, img_path_1, img_path_2, img_path_3, img_path_4, 
+                 video_path, em_oferta, novo_preco, oferta_fim, id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"""
+        cursor.execute(sql, (nome, preco, descricao, img_1, img_2, img_3, img_4, video_path, oferta_status, novo_preco, oferta_fim, id))
+    
     conn.commit()
     conn.close()
 
@@ -182,14 +196,18 @@ def delete_produto(id_produto):
     conn.commit()
     conn.close()
 
+# --- FUNÇÕES DE CLIENTES ---
+
 def add_cliente(nome_completo, whatsapp, email):
     conn = create_connection()
     try:
         conn.execute("INSERT INTO clientes (nome_completo, whatsapp, email) VALUES (?, ?, ?)", (nome_completo, whatsapp, email))
         conn.commit()
         return True
-    except: return False
-    finally: conn.close()
+    except:
+        return False
+    finally:
+        conn.close()
 
 def get_clientes():
     conn = create_connection()
@@ -214,6 +232,8 @@ def delete_cliente(id_cliente):
     conn.execute("DELETE FROM clientes WHERE id=?", (id_cliente,))
     conn.commit()
     conn.close()
+
+# --- FUNÇÕES DE CONFIGURAÇÃO ---
 
 def get_configuracoes():
     conn = create_connection()

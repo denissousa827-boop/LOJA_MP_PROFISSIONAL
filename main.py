@@ -1,7 +1,8 @@
-from flask import Flask, render_template, request, redirect, url_for, session, flash
+from flask import Flask, render_template, request, redirect, url_for, session, flash, jsonify
 from werkzeug.utils import secure_filename
 import os
 import datetime
+import mercadopago
 
 # Importa as funções de API e dados
 from apimercadopago import gerar_link_pagamento
@@ -11,8 +12,7 @@ from database import (
     add_cliente, get_clientes, get_cliente_por_id, update_cliente, delete_cliente,
     get_configuracoes, update_configuracao,
     get_produtos_em_oferta,
-    # --- NOVAS FUNÇÕES DO BANCO DE DADOS ---
-    get_vendas, get_venda_por_id, registrar_venda 
+    get_vendas, get_venda_por_id, registrar_venda, atualizar_status_venda
 )
 
 # ---------------- CONFIGURAÇÃO INICIAL ----------------
@@ -34,12 +34,11 @@ def allowed_file(filename):
     return '.' in filename and \
            filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
-# --- FUNÇÃO HELPER: CARREGA CONFIGURAÇÕES ---
 def load_shop_config():
     """Carrega todas as configurações do banco de dados para os templates."""
     config = get_configuracoes()
     banner_pagamento = []
-    if config.get('banner_pagamento'):
+    if config and config.get('banner_pagamento'):
         banner_pagamento = [f.strip() for f in config['banner_pagamento'].split(',') if f.strip()]
     return config, banner_pagamento
 
@@ -92,11 +91,13 @@ def produto_detalhes(id_produto):
     if not produto:
         return redirect(url_for('homepage'))
 
-    # Lógica de expiração de oferta
-    if produto['oferta_fim'] and datetime.datetime.now().isoformat() > produto['oferta_fim']:
-        produto['em_oferta'] = 0
+    try:
+        if produto.get('oferta_fim') and datetime.datetime.now().isoformat() > produto['oferta_fim']:
+            produto['em_oferta'] = 0
+    except Exception:
+        pass
 
-    imagens = [produto['img_path_1'], produto['img_path_2'], produto['img_path_3'], produto['img_path_4']]
+    imagens = [produto.get('img_path_1'), produto.get('img_path_2'), produto.get('img_path_3'), produto.get('img_path_4')]
     return render_template(
         "produto_detalhes.html", produto=produto, imagens=imagens, config=config, banner_pagamento=banner_pagamento
     )
@@ -107,25 +108,53 @@ def comprar_produto(id_produto):
     if not produto:
         return redirect(url_for('compra_errada'))
 
-    # --- REGISTRA A INTENÇÃO DE VENDA ---
-    # Nota: Como ainda não há um checkout com dados do cliente aqui, 
-    # registramos como 'Visitante' ou pegamos da sessão se houver.
-    registrar_venda(
+    valor_venda = produto['preco']
+    if produto.get('em_oferta') and produto.get('novo_preco'):
+        valor_venda = produto['novo_preco']
+
+    id_venda = registrar_venda(
         nome_cliente="Interessado", 
         email_cliente="n/a", 
         whatsapp_cliente="n/a",
         produto_nome=produto['nome'],
         quantidade=1,
-        valor_total=produto['preco'] if not produto['em_oferta'] else produto['novo_preco']
+        valor_total=valor_venda
     )
 
-    # Gera o link de pagamento real no Mercado Pago
-    link_iniciar_pagamento = gerar_link_pagamento(produto)
+    link_iniciar_pagamento = gerar_link_pagamento(produto, id_venda)
 
     if link_iniciar_pagamento:
         return redirect(link_iniciar_pagamento)
     else:
         return redirect(url_for('compra_errada'))
+
+# --- ROTA WEBHOOK: APROVAÇÃO AUTOMÁTICA (CONFIGURADA) ---
+@app.route("/webhook", methods=['POST'])
+def webhook():
+    sdk = mercadopago.SDK("APP_USR-2222429353877099-112620-ccc34bc216b9dad3e14ec4618dbc5de3-1565971221")
+    
+    # O Mercado Pago envia o ID via query string (args)
+    payment_id = request.args.get('data.id') or request.args.get('id')
+    
+    if payment_id:
+        try:
+            pagamento_info = sdk.payment().get(payment_id)
+            
+            if pagamento_info["status"] == 200:
+                resposta = pagamento_info["response"]
+                status_mp = resposta.get("status")
+                id_venda_interna = resposta.get("external_reference")
+
+                print(f"--- WEBHOOK RECEBIDO: Venda {id_venda_interna} Status {status_mp} ---")
+
+                if status_mp == "approved" and id_venda_interna:
+                    atualizar_status_venda(id_venda_interna, 'pago')
+                    print(f"✅ SUCESSO: Venda {id_venda_interna} atualizada para PAGO!")
+                
+        except Exception as e:
+            print(f"❌ Erro ao processar webhook: {e}")
+
+    return jsonify({"status": "ok"}), 200
 
 @app.route("/sucesso")
 def compra_certa():
@@ -163,7 +192,6 @@ def admin_dashboard():
     clientes = get_clientes()
     return render_template("admin_dashboard.html", produtos=produtos, clientes=clientes)
 
-# --- NOVA ROTA: LISTAGEM DE VENDAS ---
 @app.route("/admin/vendas")
 def admin_vendas():
     if 'logged_in' not in session:
@@ -171,7 +199,6 @@ def admin_vendas():
     vendas_lista = get_vendas()
     return render_template("admin_vendas.html", vendas=vendas_lista)
 
-# --- NOVA ROTA: DETALHES DA VENDA ---
 @app.route("/admin/venda/<int:id_venda>")
 def admin_detalhe_venda(id_venda):
     if 'logged_in' not in session:
@@ -229,10 +256,17 @@ def admin_edit(id_produto=None):
     if request.method == 'POST':
         id_prod = request.form.get('id', id_produto)
         nome = request.form['nome']
-        preco = float(request.form['preco'])
+        
+        try:
+            preco = float(request.form.get('preco', 0))
+            novo_preco = request.form.get('novo_preco')
+            novo_preco = float(novo_preco) if novo_preco else None
+        except ValueError:
+            flash("Erro nos valores de preço. Use apenas números e ponto.")
+            return redirect(request.url)
+
         descricao = request.form['descricao']
         em_oferta = request.form.get('em_oferta') == 'on'
-        novo_preco = float(request.form.get('novo_preco')) if request.form.get('novo_preco') else None
         oferta_fim = request.form.get('oferta_fim')
 
         img_paths = []

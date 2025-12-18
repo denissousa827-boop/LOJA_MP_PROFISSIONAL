@@ -1,39 +1,52 @@
 import mercadopago
 
-# Sua Chave de Token de Produção
+# Seu Token de Produção
 ACCESS_TOKEN = "APP_USR-2222429353877099-112620-ccc34bc216b9dad3e14ec4618dbc5de3-1565971221"
 
-def gerar_link_pagamento(produto):
-    sdk = mercadopago.SDK(ACCESS_TOKEN)
-
-    # Define o preço (oferta ou normal)
-    if produto.get('em_oferta') and produto.get('novo_preco'):
-        preco_final = float(produto['novo_preco'])
-    else:
-        preco_final = float(produto['preco'])
-
-    preference_data = {
-        "items": [
-            {
-                "id": str(produto['id']),
-                "title": str(produto['nome']),
-                "quantity": 1,
-                "unit_price": preco_final,
-                "currency_id": "BRL"
-            }
-        ],
-        "back_urls": {
-            "success": "http://192.168.0.102:5000/sucesso",
-            "failure": "http://192.168.0.102:5000/erro",
-            "pending": "http://192.168.0.102:5000/erro"
-        }
-        # auto_return removido para evitar erro 400 em HTTP local
-    }
-
+def gerar_link_pagamento(produto, id_venda):
+    """
+    Gera o link do Mercado Pago configurado com o túnel do Serveo.
+    """
     try:
-        preference_response = sdk.preference().create(preference_data)
-        preference = preference_response["response"]
-        return preference.get("init_point")
+        sdk = mercadopago.SDK(ACCESS_TOKEN)
+
+        # Define o preço (Normal ou Oferta)
+        if produto.get('em_oferta') == 1 and produto.get('novo_preco'):
+            preco_final = float(produto['novo_preco'])
+        else:
+            preco_final = float(produto['preco'])
+
+        # SEU LINK DO SERVEO (Não mude enquanto o túnel estiver aberto)
+        LINK_EXTERNO = "https://a2be24bcac62d8d8db2987ae326790ec.serveousercontent.com"
+
+        preference_data = {
+            "items": [
+                {
+                    "id": str(produto.get('id', '000')),
+                    "title": str(produto.get('nome', 'Produto')),
+                    "quantity": 1,
+                    "unit_price": preco_final,
+                    "currency_id": "BRL"
+                }
+            ],
+            "external_reference": str(id_venda), # ID da venda para o webhook atualizar
+            "back_urls": {
+                "success": f"{LINK_EXTERNO}/sucesso",
+                "failure": f"{LINK_EXTERNO}/erro",
+                "pending": f"{LINK_EXTERNO}/erro"
+            },
+            "notification_url": f"{LINK_EXTERNO}/webhook", # Onde o MP avisa o pagamento
+            "auto_return": "approved"
+        }
+
+        resultado = sdk.preference().create(preference_data)
+        
+        if "response" in resultado and "init_point" in resultado["response"]:
+            return resultado["response"]["init_point"]
+        else:
+            print("Erro detalhado do MP:", resultado)
+            return None
+
     except Exception as e:
-        print(f"Erro ao conectar com Mercado Pago: {e}")
+        print(f"Erro crítico no pagamento: {e}")
         return None
