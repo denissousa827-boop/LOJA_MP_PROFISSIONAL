@@ -17,7 +17,7 @@ def gerar_link_pagamento(produto, id_venda):
             preco_final = float(produto['preco'])
 
         # SEU LINK DO SERVEO (Não mude enquanto o túnel estiver aberto)
-        LINK_EXTERNO = "https://a2be24bcac62d8d8db2987ae326790ec.serveousercontent.com"
+        LINK_EXTERNO = "https://2899e90966eaaa2ce0f188b95ef0da2e.serveousercontent.com"
 
         preference_data = {
             "items": [

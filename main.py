@@ -128,12 +128,11 @@ def comprar_produto(id_produto):
     else:
         return redirect(url_for('compra_errada'))
 
-# --- ROTA WEBHOOK: APROVAÇÃO AUTOMÁTICA (CONFIGURADA) ---
+# --- ROTA WEBHOOK: APROVAÇÃO AUTOMÁTICA ---
 @app.route("/webhook", methods=['POST'])
 def webhook():
     sdk = mercadopago.SDK("APP_USR-2222429353877099-112620-ccc34bc216b9dad3e14ec4618dbc5de3-1565971221")
     
-    # O Mercado Pago envia o ID via query string (args)
     payment_id = request.args.get('data.id') or request.args.get('id')
     
     if payment_id:
@@ -214,11 +213,16 @@ def admin_logout():
     session.clear()
     return redirect(url_for('admin_login'))
 
-@app.route("/admin/delete/<id_produto>")
+# --- CORREÇÃO APLICADA AQUI: ROTA DE EXCLUSÃO AGORA ACEITA POST ---
+@app.route("/admin/delete/<id_produto>", methods=['POST'])
 def admin_delete(id_produto):
     if 'logged_in' not in session:
         return redirect(url_for('admin_login'))
+    
+    # Chama a função do database.py para remover do banco
     delete_produto(id_produto)
+    
+    flash(f"Produto {id_produto} excluído com sucesso!")
     return redirect(url_for('admin_dashboard'))
 
 @app.route("/admin/clientes")

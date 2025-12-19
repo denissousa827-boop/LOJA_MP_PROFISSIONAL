@@ -23,6 +23,17 @@
 <body>
     <div class="container">
         <h2>Bem-vindo, {{ session['username'] }}!</h2>
+        
+        {% with messages = get_flashed_messages() %}
+          {% if messages %}
+            {% for message in messages %}
+              <div style="padding: 10px; background-color: #d4edda; color: #155724; margin-bottom: 20px; border-radius: 5px;">
+                {{ message }}
+              </div>
+            {% endfor %}
+          {% endif %}
+        {% endwith %}
+
         <div class="user-info">
             <a href="{{ url_for('admin_logout') }}">Sair</a> |
             <a href="{{ url_for('homepage') }}">Ver Loja</a>
