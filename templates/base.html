@@ -2,46 +2,39 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>{% block title %}{{ config.get('titulo_site', 'Minha Loja Online') }}{% endblock %}</title>
-
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}{{ config.get('titulo_site', 'Minha Loja') }}{% endblock %}</title>
+    
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+    
     <style>
         :root {
             --header-bg: {{ config.get('header_color', '#181818') }};
-            --footer-bg: {{ config.get('footer_color', '#303030') }};
-            --link-color: #ffffff;
-            --accent-color: #ffcc00; 
-            --bg-body: #ebebeb; 
-            --ml-blue: #3483fa; /* Azul padrão Mercado Livre */
+            --footer-bg: {{ config.get('footer_color', '#181818') }};
+            --primary-color: #d10024;
         }
 
         body {
-            font-family: 'Proxima Nova', -apple-system, sans-serif;
             margin: 0;
             padding: 0;
-            background-color: var(--bg-body);
+            font-family: 'Poppins', sans-serif;
+            background-color: #f5f5f5;
             color: #333;
-            overflow-x: hidden;
         }
 
         .container {
-            width: 100%;
             max-width: 1200px;
             margin: 0 auto;
-            padding: 0 10px;
-            box-sizing: border-box;
+            padding: 0 15px;
         }
 
-        /* --- CABEÇALHO --- */
+        /* Cabeçalho Dinâmico */
         header {
             background-color: var(--header-bg);
-            padding: 12px 0;
+            padding: 15px 0;
             color: white;
-            position: sticky;
-            top: 0;
-            z-index: 1000;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
         }
 
         .header-content {
@@ -50,197 +43,105 @@
             align-items: center;
         }
 
-        .logo img { max-height: 35px; width: auto; }
-        .logo a { color: white; text-decoration: none; font-weight: bold; }
-
-        nav { display: flex; align-items: center; gap: 12px; }
-        nav a { color: white; text-decoration: none; font-size: 0.9em; }
-
-        /* --- BOTÃO WHATSAPP FLUTUANTE --- */
-        .whatsapp-float {
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            background-color: #25d366;
-            color: white;
-            width: 55px;
-            height: 55px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 30px;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
-            z-index: 1001;
-            text-decoration: none;
+        .logo img {
+            max-height: 50px;
+            display: block;
         }
 
-        /* --- GRID E CARDS DE PRODUTO --- */
-        .product-grid {
-            display: flex;
-            flex-wrap: wrap;
-            margin: 10px -5px;
-            padding: 0;
-        }
-
-        .product-card {
-            background: #fff;
-            border-radius: 4px;
-            margin: 5px;
-            display: flex;
-            flex-direction: column;
-            width: calc(50% - 10px);
-            box-sizing: border-box;
-            border: 1px solid #ddd;
-            overflow: hidden;
-            text-decoration: none;
-            color: inherit;
-        }
-
-        .img-container {
-            width: 100%;
-            aspect-ratio: 1/1;
-            background: #fff;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .img-container img {
-            max-width: 100%;
-            max-height: 100%;
-            object-fit: contain;
-        }
-
-        .info-container { 
-            padding: 10px; 
-            display: flex; 
-            flex-direction: column; 
-            flex-grow: 1; 
-        }
-
-        .product-name {
-            font-size: 13px;
-            color: #333;
-            height: 32px;
-            overflow: hidden;
-            line-height: 1.2;
-            margin-bottom: 5px;
-        }
-
-        .price-tag {
-            font-size: 18px;
-            font-weight: 500;
-            color: #333;
-            margin-bottom: 10px;
-        }
-
-        /* --- BOTÃO AZUL QUE VOCÊ PEDIU --- */
-        .btn-compra {
-            background-color: var(--ml-blue);
-            color: white !important;
-            text-align: center;
-            padding: 8px;
-            border-radius: 4px;
+        .logo-text {
+            font-size: 24px;
             font-weight: bold;
-            font-size: 13px;
             text-decoration: none;
-            margin-top: auto; /* Joga o botão para o fim do card */
+            color: white;
         }
 
-        /* --- RODAPÉ --- */
+        nav a {
+            color: white;
+            text-decoration: none;
+            margin-left: 20px;
+            font-weight: 500;
+        }
+
+        /* Rodapé */
         footer {
             background-color: var(--footer-bg);
             color: white;
-            padding: 30px 0 20px 0;
-            margin-top: 30px;
+            padding: 40px 0;
+            margin-top: 50px;
         }
 
         .footer-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-            gap: 20px;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 30px;
         }
 
-        .footer-grid h4 { font-size: 14px; margin-bottom: 12px; text-transform: uppercase; }
-        .footer-links a { color: #aaa; text-decoration: none; display: block; margin-bottom: 8px; font-size: 13px; }
-
-        .payment-banner img {
-            max-height: 20px;
-            margin-right: 5px;
-            margin-bottom: 5px;
+        .footer-section h4 {
+            border-bottom: 2px solid var(--primary-color);
+            padding-bottom: 10px;
+            margin-bottom: 20px;
         }
 
-        @media (min-width: 769px) {
-            .product-card { width: calc(25% - 10px); }
+        /* Ajustes para Mobile */
+        @media (max-width: 600px) {
+            .header-content { flex-direction: column; gap: 10px; }
+            nav { margin-top: 10px; }
+            nav a { margin: 0 10px; }
         }
     </style>
 </head>
 <body>
 
-    <a href="https://wa.me/{{ config.get('contato_whatsapp')|replace('(', '')|replace(')', '')|replace('-', '')|replace(' ', '') }}" class="whatsapp-float" target="_blank">
-        <i class="fab fa-whatsapp"></i>
-    </a>
-
     <header>
         <div class="container header-content">
-            <div class="logo">
-                <a href="{{ url_for('homepage') }}">
-                    {% if config.get('logo_img') %}
-                        {% set logo_filename = config['logo_img'].split('/')[-1] %}
-                        <img src="{{ url_for('static', filename='uploads/' + logo_filename) }}" alt="Logo">
-                    {% else %}
-                        {{ config.get('titulo_site', 'LOJA OFICIAL') }}
-                    {% endif %}
-                </a>
-            </div>
+            <a href="/" class="logo">
+                {% if config.get('logo_img') %}
+                    <img src="{{ config.get('logo_img') }}" alt="Logo {{ config.get('titulo_site') }}">
+                {% else %}
+                    <span class="logo-text">{{ config.get('titulo_site', 'LOJA ONLINE') }}</span>
+                {% endif %}
+            </a>
+            
             <nav>
-                <a href="{{ url_for('homepage') }}">Início</a>
-                <a href="#" style="color: var(--accent-color);">🛒 Carrinho</a>
+                <a href="/"><i class="fas fa-home"></i> Início</a>
+                <a href="https://wa.me/{{ config.get('contato_whatsapp') }}" target="_blank">
+                    <i class="fab fa-whatsapp"></i> Suporte
+                </a>
+                {% if session.get('admin_logged_in') %}
+                    <a href="{{ url_for('admin_dashboard') }}" style="color: #ffc107;"><i class="fas fa-user-shield"></i> Painel</a>
+                {% endif %}
             </nav>
         </div>
     </header>
 
-    <main class="container">
+    <main>
         {% block content %}{% endblock %}
     </main>
 
     <footer>
         <div class="container footer-grid">
-            <div>
-                <h4>Institucional</h4>
-                <div class="footer-links">
-                    <a href="{{ url_for('pagina_info', chave_config='quem_somos') }}">Quem Somos</a>
-                    <a href="{{ url_for('pagina_info', chave_config='politica_privacidade') }}">Privacidade</a>
-                </div>
+            <div class="footer-section">
+                <h4>Sobre Nós</h4>
+                <p>{{ config.get('titulo_site', 'Nossa Loja') }} - Os melhores produtos com entrega rápida e segura.</p>
             </div>
-            <div>
-                <h4>Dúvidas</h4>
-                <div class="footer-links">
-                    <a href="{{ url_for('pagina_info', chave_config='trocas_devolucoes') }}">Trocas</a>
-                    <a href="{{ url_for('pagina_info', chave_config='entrega_frete') }}">Frete</a>
-                </div>
+            <div class="footer-section">
+                <h4>Contato</h4>
+                <p><i class="fas fa-envelope"></i> {{ config.get('contato_email', 'contato@email.com') }}</p>
+                <p><i class="fab fa-whatsapp"></i> {{ config.get('contato_whatsapp', 'WhatsApp') }}</p>
             </div>
-            <div>
-                <h4>Suporte</h4>
-                <p style="font-size: 13px; color: #aaa;">WhatsApp:<br>{{ config.get('contato_whatsapp') }}</p>
-            </div>
-            <div>
-                <h4>Pagamento</h4>
-                <div class="payment-banner">
-                    {% if banner_pagamento %}
-                        {% for path in banner_pagamento %}
-                            <img src="{{ url_for('static', filename='uploads/' + path.split('/')[-1]) }}">
-                        {% endfor %}
-                    {% endif %}
+            <div class="footer-section">
+                <h4>Pagamento Seguro</h4>
+                <p>Processado por Mercado Pago</p>
+                <div style="font-size: 24px; gap: 10px; display: flex;">
+                    <i class="fab fa-cc-visa"></i>
+                    <i class="fab fa-cc-mastercard"></i>
+                    <i class="fas fa-barcode"></i>
+                    <i class="fas fa-pix"></i>
                 </div>
-                <a href="{{ url_for('cadastro_cliente') }}" style="color: var(--accent-color); font-size: 12px; text-decoration: none; font-weight: bold;">
-                    CADASTRAR CLIENTE
-                </a>
             </div>
         </div>
-        <div style="text-align: center; padding-top: 30px; font-size: 11px; color: #666; border-top: 1px solid rgba(255,255,255,0.05); margin-top: 20px;">
-            &copy; 2025 {{ config.get('titulo_site') }} | Todos os direitos reservados.
+        <div style="text-align: center; margin-top: 30px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 20px;">
+            &copy; 2024 {{ config.get('titulo_site') }} - Todos os direitos reservados.
         </div>
     </footer>
 

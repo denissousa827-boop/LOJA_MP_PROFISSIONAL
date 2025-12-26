@@ -3,39 +3,34 @@ import mercadopago
 # Seu Token de Produção
 ACCESS_TOKEN = "APP_USR-2222429353877099-112620-ccc34bc216b9dad3e14ec4618dbc5de3-1565971221"
 
-def gerar_link_pagamento(produto, id_venda):
+def gerar_link_pagamento(produto, id_venda, valor_total):
     """
     Gera o link do Mercado Pago configurado com o túnel do Serveo.
+    Agora recebe 'valor_total' que já inclui o frete calculado no checkout.
     """
     try:
         sdk = mercadopago.SDK(ACCESS_TOKEN)
 
-        # Define o preço (Normal ou Oferta)
-        if produto.get('em_oferta') == 1 and produto.get('novo_preco'):
-            preco_final = float(produto['novo_preco'])
-        else:
-            preco_final = float(produto['preco'])
-
-        # SEU LINK DO SERVEO (Não mude enquanto o túnel estiver aberto)
+        # SEU LINK DO SERVEO
         LINK_EXTERNO = "https://2899e90966eaaa2ce0f188b95ef0da2e.serveousercontent.com"
 
         preference_data = {
             "items": [
                 {
                     "id": str(produto.get('id', '000')),
-                    "title": str(produto.get('nome', 'Produto')),
+                    "title": f"{produto.get('nome', 'Produto')} + Envio",
                     "quantity": 1,
-                    "unit_price": preco_final,
+                    "unit_price": float(valor_total), # Valor final com frete
                     "currency_id": "BRL"
                 }
             ],
-            "external_reference": str(id_venda), # ID da venda para o webhook atualizar
+            "external_reference": str(id_venda), 
             "back_urls": {
                 "success": f"{LINK_EXTERNO}/sucesso",
                 "failure": f"{LINK_EXTERNO}/erro",
                 "pending": f"{LINK_EXTERNO}/erro"
             },
-            "notification_url": f"{LINK_EXTERNO}/webhook", # Onde o MP avisa o pagamento
+            "notification_url": f"{LINK_EXTERNO}/webhook", 
             "auto_return": "approved"
         }
 

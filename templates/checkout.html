@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Checkout Seguro - {{ config.get('titulo_site', 'Loja Online') }}</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <style>
+        body { background-color: #000000; color: #ffffff; font-family: 'Segoe UI', sans-serif; }
+        .checkout-container { max-width: 1000px; margin: 30px auto; }
+        .card { background-color: #1a1a1a; border: 1px solid #333; border-radius: 15px; color: #ffffff; }
+        .form-control { background-color: #262626; border: 1px solid #444; color: #ffffff; }
+        .form-control:focus, .form-control:read-only { background-color: #2d2d2d; border-color: #00a650; color: #ffffff; box-shadow: none; }
+        .btn-pagar { background-color: #00a650; color: white; font-weight: bold; font-size: 1.2rem; border: none; transition: 0.3s; padding: 15px; }
+        .btn-pagar:hover { background-color: #008f45; transform: scale(1.02); }
+        .resumo-produto { border-left: 4px solid #00a650; padding-left: 15px; }
+
+        /* Opções de Frete e Pagamento */
+        .frete-option, .payment-option {
+            background: #262626; border: 2px solid #333; transition: 0.2s;
+            cursor: pointer; margin-bottom: 12px; padding: 15px; display: flex; align-items: center; border-radius: 10px;
+        }
+        .frete-option:hover, .payment-option:hover { border-color: #00a650; background: #2d2d2d; }
+        .selected-item { border-color: #00a650 !important; background: #1e3a2a !important; }
+
+        .img-transportadora { width: 45px; height: 45px; object-fit: contain; background: white; padding: 3px; border-radius: 6px; margin-right: 15px; }
+        .loading { display: none; color: #00a650; font-size: 0.85rem; font-weight: 500; }
+        .badge-pix { background: #00a650; color: white; font-size: 11px; padding: 2px 8px; border-radius: 4px; margin-left: 10px; text-transform: uppercase; }
+        .frete-gratis-badge { color: #00a650; font-weight: bold; font-size: 0.9rem; }
+    </style>
+</head>
+<body>
+
+<div class="container checkout-container">
+    <div class="text-center mb-5">
+        <h2 class="fw-bold">Finalizar Compra</h2>
+        <p class="text-muted">🔒 Pagamento Criptografado e Seguro</p>
+    </div>
+
+    <form action="/processar_pagamento" method="POST" id="form-checkout">
+        <input type="hidden" name="id_produto" value="{{ produto.id }}">
+        <input type="hidden" name="cidade" id="cidade_hidden">
+        <input type="hidden" name="estado" id="estado_hidden">
+        <input type="hidden" name="frete_valor" id="frete_valor" value="0">
+        <input type="hidden" name="metodo_pagamento" id="metodo_pagamento" value="cartao">
+
+        <div class="row">
+            <div class="col-md-7">
+                <div class="card p-4 mb-4">
+                    <h4 class="mb-4 text-success">1. Seus Dados</h4>
+                    <div class="mb-3">
+                        <label class="form-label">Nome Completo</label>
+                        <input type="text" name="nome" class="form-control" placeholder="Digite seu nome completo" required>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">CPF</label>
+                            <input type="text" name="cpf" id="cpf" class="form-control" placeholder="000.000.000-00" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">WhatsApp</label>
+                            <input type="text" name="whatsapp" id="whatsapp" class="form-control" placeholder="(00) 00000-0000" required>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card p-4 mb-4">
+                    <h4 class="mb-4 text-success">2. Endereço de Entrega</h4>
+                    <div class="row">
+                        <div class="col-md-5 mb-3">
+                            <label class="form-label">CEP</label>
+                            <input type="text" name="cep" id="cep" class="form-control" placeholder="00000-000" maxlength="9" required>
+                            <small class="loading" id="load-cep"><i class="fas fa-spinner fa-spin"></i> Validando CEP...</small>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <label class="form-label">Número</label>
+                            <input type="text" name="numero" class="form-control" required>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">UF</label>
+                            <input type="text" id="uf" class="form-control" readonly>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Rua</label>
+                        <input type="text" name="endereco" id="rua" class="form-control" readonly required>
+                    </div>
+                </div>
+
+                <div class="card p-4 mb-4">
+                    <h4 class="mb-4 text-success">3. Forma de Pagamento</h4>
+                    <div class="payment-option selected-item" data-pay="cartao">
+                        <input type="radio" name="pay_sel" checked class="form-check-input me-3">
+                        <div class="fw-bold">Cartão de Crédito / Parcelado</div>
+                    </div>
+                    <div class="payment-option" data-pay="pix">
+                        <input type="radio" name="pay_sel" class="form-check-input me-3">
+                        <div class="fw-bold">Pix <span class="badge-pix">Até {{ produto.desconto_pix }}% de Desconto</span></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-5">
+                <div class="card p-4 sticky-top" style="top: 20px;">
+                    <h4 class="mb-4 text-success">Resumo do Pedido</h4>
+                    <div class="resumo-produto d-flex align-items-center mb-4">
+                        <img src="{{ url_for('static', filename='uploads/' + produto.img_path_1.split('/')[-1]) if produto.img_path_1 else '/static/placeholder.png' }}" 
+                             class="rounded me-3" style="width: 70px; height: 70px; object-fit: cover; border: 1px solid #444;">
+                        <div>
+                            <p class="mb-0 fw-bold">{{ produto.nome }}</p>
+                            <p class="text-success mb-0">R$ <span id="valor-produto">{{ "%.2f"|format(produto.novo_preco if produto.em_oferta else produto.preco) }}</span></p>
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        <h6 class="mb-3"><i class="fas fa-truck"></i> Opções de Envio:</h6>
+                        <div id="opcoes-frete">
+                            <p class="text-muted small">Insira o CEP para ver as opções...</p>
+                        </div>
+                    </div>
+
+                    <hr style="border-color: #444;">
+                    <div class="d-flex justify-content-between align-items-center h4 mt-4">
+                        <span>Total:</span>
+                        <span class="text-success fw-bold">R$ <span id="valor-total">{{ "%.2f"|format(produto.novo_preco if produto.em_oferta else produto.preco) }}</span></span>
+                    </div>
+
+                    <button type="submit" class="btn btn-pagar w-100 mt-4">FINALIZAR COMPRA AGORA</button>
+                    <div class="text-center mt-3 small text-muted">
+                        <i class="fas fa-lock"></i> Conexão segura SSL 256 bits
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+
+<script>
+    const VALOR_LIMITE_FRETE = 85.00;
+    const VALOR_MINIMO_MULT_FRETE = 50.00;
+    const PRECO_BASE = parseFloat('{{ produto.novo_preco if produto.em_oferta else produto.preco }}');
+    const DESC_PIX = parseFloat('{{ produto.desconto_pix or 0 }}');
+
+    function atualizarTotalGeral() {
+        let frete = parseFloat($('#frete_valor').val()) || 0;
+        let metodo = $('#metodo_pagamento').val();
+        let precoComMetodo = PRECO_BASE;
+
+        if (metodo === 'pix') {
+            precoComMetodo = PRECO_BASE * ((100 - DESC_PIX) / 100);
+        }
+
+        // Se o valor base for >= 85, o frete é SEMPRE 0 na conta
+        if (PRECO_BASE >= VALOR_LIMITE_FRETE) {
+            frete = 0;
+        }
+
+        let total = precoComMetodo + frete;
+        $('#valor-total').text(total.toLocaleString('pt-br', {minimumFractionDigits: 2, maximumFractionDigits: 2}));
+    }
+
+    // Seleção de Pagamento
+    $('.payment-option').on('click', function() {
+        $('.payment-option').removeClass('selected-item');
+        $(this).addClass('selected-item').find('input').prop('checked', true);
+        $('#metodo_pagamento').val($(this).data('pay'));
+        atualizarTotalGeral();
+    });
+
+    // CEP e Frete
+    $('#cep').on('keyup', function() {
+        var cep = $(this).val().replace(/\D/g, '');
+        if (cep.length === 8) {
+            $('#load-cep').fadeIn();
+            $.getJSON("https://viacep.com.br/ws/"+ cep +"/json/", function(dados) {
+                if (!("erro" in dados)) {
+                    $("#rua").val(dados.logradouro);
+                    $("#uf").val(dados.uf);
+                    $("#cidade_hidden").val(dados.localidade);
+                    $("#estado_hidden").val(dados.uf);
+                    $('#load-cep').fadeOut();
+                    calcularFreteInteligente(cep);
+                } else {
+                    alert("CEP inválido.");
+                    $('#load-cep').fadeOut();
+                }
+            });
+        }
+    });
+
+    function calcularFreteInteligente(cepDestino) {
+        $('#opcoes-frete').html('<div class="spinner-border text-success spinner-border-sm"></div> Buscando melhor envio...');
+        
+        $.ajax({
+            url: '/calcular_frete',
+            type: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify({ cep: cepDestino, produto_id: '{{ produto.id }}' }),
+            success: function(response) {
+                let html = '';
+                
+                // Lógica de limite de opções para produtos < 50 reais
+                let listaProcessada = (PRECO_BASE < VALOR_MINIMO_MULT_FRETE) ? response.slice(0, 4) : response;
+
+                if (listaProcessada.length > 0) {
+                    listaProcessada.forEach((op, index) => {
+                        let valorOriginal = parseFloat(op.preco || op.price);
+                        
+                        // REGRA: ACIMA DE 85 REAIS É GRÁTIS
+                        let precoFinalFrete = (PRECO_BASE >= VALOR_LIMITE_FRETE) ? 0 : valorOriginal;
+                        let labelPreco = precoFinalFrete === 0 ? '<span class="frete-gratis-badge">FRETE GRÁTIS</span>' : `R$ ${precoFinalFrete.toFixed(2).replace('.',',')}`;
+                        
+                        html += `
+                        <label class="frete-option rounded ${index === 0 ? 'selected-item' : ''}" for="f${index}">
+                            <input class="form-check-input select-frete me-3" type="radio" name="servico_frete" id="f${index}" value="${precoFinalFrete}" ${index === 0 ? 'checked' : ''}>
+                            <img src="${op.logo || 'https://cdn-icons-png.flaticon.com/512/709/709790.png'}" class="img-transportadora">
+                            <div style="flex-grow: 1;">
+                                <div class="d-flex justify-content-between">
+                                    <span class="fw-bold">${op.empresa || op.name}</span>
+                                    <span class="fw-bold">${labelPreco}</span>
+                                </div>
+                                <div class="small text-muted">Entrega prevista em ${op.prazo || '8'} dias</div>
+                            </div>
+                        </label>`;
+                    });
+                    $('#opcoes-frete').html(html);
+                    $('#frete_valor').val(PRECO_BASE >= VALOR_LIMITE_FRETE ? 0 : parseFloat(listaProcessada[0].preco || listaProcessada[0].price));
+                    atualizarTotalGeral();
+                }
+            }
+        });
+    }
+
+    $(document).on('change', '.select-frete', function() {
+        $('.frete-option').removeClass('selected-item');
+        $(this).closest('.frete-option').addClass('selected-item');
+        $('#frete_valor').val($(this).val());
+        atualizarTotalGeral();
+    });
+
+    // Máscaras
+    $('#cpf').on('input', function() {
+        let v = this.value.replace(/\D/g, '');
+        v = v.replace(/(\d{3})(\d)/, '$1.$2').replace(/(\d{3})(\d)/, '$1.$2').replace(/(\d{3})(\d{1,2})$/, '$1-$2');
+        this.value = v;
+    });
+    $('#whatsapp').on('input', function() {
+        let v = this.value.replace(/\D/g, '');
+        v = v.replace(/^(\d{2})(\d)/g, '($1) $2').replace(/(\d{5})(\d)/, '$1-$2');
+        this.value = v;
+    });
+</script>
+</body>
+</html>

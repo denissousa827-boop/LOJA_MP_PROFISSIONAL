@@ -1,85 +1,107 @@
-<!DOCTYPE html>
-<html lang="pt-br">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard Admin</title>
-    <style>
-        body { font-family: Arial, sans-serif; padding: 20px; background-color: #f4f4f4; }
-        .container { max-width: 1000px; margin: 0 auto; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
-        h2 { color: #333; border-bottom: 2px solid #eee; padding-bottom: 10px; }
-        h3 { color: #007bff; margin-top: 30px; }
-        .actions { margin-bottom: 20px; }
-        .actions a { color: green; text-decoration: none; font-weight: bold; }
-        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
-        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
-        th { background-color: #f2f2f2; }
-        td a, td input[type="submit"] { margin-right: 10px; text-decoration: none; padding: 5px 10px; border-radius: 4px; }
-        td a { background-color: #007bff; color: white; }
-        td input[type="submit"] { background-color: #dc3545; color: white; border: none; cursor: pointer; }
-        .user-info a { margin-right: 15px; color: #333; }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <h2>Bem-vindo, {{ session['username'] }}!</h2>
-        
-        {% with messages = get_flashed_messages() %}
-          {% if messages %}
-            {% for message in messages %}
-              <div style="padding: 10px; background-color: #d4edda; color: #155724; margin-bottom: 20px; border-radius: 5px;">
-                {{ message }}
-              </div>
-            {% endfor %}
-          {% endif %}
-        {% endwith %}
+{% extends "base.html" %}
 
-        <div class="user-info">
-            <a href="{{ url_for('admin_logout') }}">Sair</a> |
-            <a href="{{ url_for('homepage') }}">Ver Loja</a>
+{% block title %}Painel Administrativo Pro | {{ config.get('titulo_site', 'Loja') }}{% endblock %}
+
+{% block content %}
+<div class="container" style="margin-top: 30px; margin-bottom: 50px; max-width: 1200px; padding: 0 15px;">
+
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
+        <div>
+            <h2 style="margin: 0; color: #1a1a1a;">Gestão da Loja</h2>
+            <p style="margin: 5px 0 0; color: #666;">Olá, Administrador. Controle tudo por aqui.</p>
         </div>
-
-        <h3 style="color: purple; margin-top: 20px;">Configurações e Conteúdo da Loja</h3>
-        <div class="actions">
-            <p><a href="{{ url_for('admin_configuracoes') }}" style="color: purple;">⚙️ Editar Textos Institucionais e Contatos</a></p>
+        <div style="display: flex; gap: 12px;">
+            <a href="{{ url_for('homepage') }}" style="text-decoration: none; padding: 12px 20px; border: 1px solid #ddd; border-radius: 8px; color: #555; font-weight: 600;">
+                <i class="fas fa-eye"></i> Ver Loja
+            </a>
+            <a href="{{ url_for('admin_logout') }}" style="text-decoration: none; padding: 12px 20px; background: #ff4757; color: white; border-radius: 8px; font-weight: 600;">
+                <i class="fas fa-sign-out-alt"></i> Sair
+            </a>
         </div>
-
-        <h3>Gestão de Produtos</h3>
-        <div class="actions">
-            <p><a href="{{ url_for('admin_edit') }}" style="color: #28a745;">➕ Adicionar Novo Produto</a></p>
-        </div>
-
-        <table>
-            <thead>
-                <tr>
-                    <th>ID</th>
-                    <th>Nome</th>
-                    <th>Preço</th>
-                    <th>Ações</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for produto in produtos %}
-                <tr>
-                    <td>{{ produto.id }}</td>
-                    <td>{{ produto.nome }}</td>
-                    <td>R$ {{ "%.2f"|format(produto.preco) }}</td>
-                    <td>
-                        <a href="{{ url_for('admin_edit', id_produto=produto.id) }}">Editar</a>
-                        <form method="POST" action="{{ url_for('admin_delete', id_produto=produto.id) }}" style="display:inline;">
-                            <input type="submit" value="Excluir" onclick="return confirm('Tem certeza que deseja excluir {{ produto.nome }} (ID: {{ produto.id }})?');">
-                        </form>
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-
-        <h3 style="margin-top: 50px;">Gestão de Clientes</h3>
-        <div class="actions">
-            <p><a href="{{ url_for('admin_clientes') }}" style="color: #007bff;">👥 Visualizar Clientes Cadastrados (Newsletter)</a></p>
-        </div>
-
     </div>
-</body>
-</html>
+
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 30px;">
+        <div style="background: #181818; color: white; padding: 25px; border-radius: 12px;">
+            <small style="opacity: 0.7; text-transform: uppercase;">Total Vendas</small>
+            <h2 style="font-size: 32px; margin: 10px 0;">{{ vendas|length }}</h2>
+        </div>
+        <div style="background: #2ed573; color: white; padding: 25px; border-radius: 12px;">
+            <small style="opacity: 0.7; text-transform: uppercase;">Produtos Ativos</small>
+            <h2 style="font-size: 32px; margin: 10px 0;">{{ produtos|length }}</h2>
+        </div>
+        <div style="background: #1e90ff; color: white; padding: 25px; border-radius: 12px;">
+            <small style="opacity: 0.7; text-transform: uppercase;">Configurações</small>
+            <h2 style="font-size: 18px; margin: 10px 0;">API Conectada</h2>
+        </div>
+    </div>
+
+    <div style="background: #f9f9fb; padding: 30px; border-radius: 15px; border: 1px solid #e1e4e8; margin-bottom: 40px;">
+        <h3 style="margin-top: 0; color: #2f3542;"><i class="fas fa-key" style="color: #ffa502;"></i> Configuração de Chaves API</h3>
+        <form action="{{ url_for('admin_configuracoes') }}" method="POST" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px;">
+            <div>
+                <label style="display: block; font-weight: bold; margin-bottom: 8px;">Access Token Mercado Pago:</label>
+                <input type="password" name="mercado_pago_token" value="{{ config.get('mercado_pago_token', '') }}" placeholder="APP_USR-..." style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #ddd;">
+            </div>
+            <div>
+                <label style="display: block; font-weight: bold; margin-bottom: 8px;">Token Melhor Envio (Frete):</label>
+                <input type="password" name="melhor_envio_token" value="{{ config.get('melhor_envio_token', '') }}" placeholder="Bearer eyJ..." style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #ddd;">
+            </div>
+            <div>
+                <label style="display: block; font-weight: bold; margin-bottom: 8px;">CEP de Origem:</label>
+                <input type="text" name="cep_origem" value="{{ config.get('cep_origem', '') }}" placeholder="00000-000" style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #ddd;">
+            </div>
+            <div style="display: flex; align-items: flex-end;">
+                <button type="submit" style="background: #2f3542; color: white; border: none; padding: 12px 25px; border-radius: 8px; font-weight: bold; cursor: pointer; width: 100%;">
+                    Salvar Chaves API
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <div style="background: white; padding: 30px; border-radius: 15px; box-shadow: 0 4px 20px rgba(0,0,0,0.05);">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px;">
+            <h3 style="margin: 0;"><i class="fas fa-boxes" style="color: #70a1ff;"></i> Catálogo de Produtos</h3>
+            <button onclick="window.location.href='/admin/edit'" style="background: #2ed573; color: white; border: none; padding: 12px 25px; border-radius: 8px; font-weight: bold; cursor: pointer;">
+                <i class="fas fa-plus"></i> NOVO PRODUTO
+            </button>
+        </div>
+
+        <div style="overflow-x: auto;">
+            <table style="width: 100%; border-collapse: collapse;">
+                <thead>
+                    <tr style="text-align: left; border-bottom: 2px solid #f1f2f6;">
+                        <th style="padding: 15px; color: #a4b0be;">Produto</th>
+                        <th style="padding: 15px; color: #a4b0be;">Preço</th>
+                        <th style="padding: 15px; color: #a4b0be; text-align: center;">Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for produto in produtos %}
+                    <tr style="border-bottom: 1px solid #f1f2f6;">
+                        <td style="padding: 15px;">
+                            <div style="display: flex; align-items: center; gap: 15px;">
+                                <img src="{{ produto.img_path_1 }}" style="width: 45px; height: 45px; border-radius: 6px; object-fit: cover;">
+                                <span style="font-weight: 600;">{{ produto.nome }}</span>
+                            </div>
+                        </td>
+                        <td style="padding: 15px; font-weight: bold; color: #2ed573;">
+                            R$ {{ "%.2f"|format(produto.preco)|replace('.', ',') }}
+                        </td>
+                        <td style="padding: 15px; text-align: center; display: flex; justify-content: center; gap: 10px;">
+                            <a href="/admin/edit/{{ produto.id }}" style="color: #1e90ff; text-decoration: none; font-weight: bold; border: 1px solid #1e90ff; padding: 5px 10px; border-radius: 5px;">
+                                <i class="fas fa-edit"></i> Editar
+                            </a>
+                            <form action="{{ url_for('admin_delete', id_produto=produto.id) }}" method="POST" style="display:inline;">
+                                <button type="submit" style="background:none; border: 1px solid #ff4757; color:#ff4757; padding: 5px 10px; border-radius: 5px; cursor:pointer;" onclick="return confirm('Excluir este produto?')">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

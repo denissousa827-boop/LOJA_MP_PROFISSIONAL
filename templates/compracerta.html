@@ -1,13 +1,45 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1>
-    <title>Compra Confirmada</title>
-</head>
-<body>
-    <h1>Compra Concluída com Sucesso!</h1>
-    <p>Obrigado por sua compra. Você será notificado sobre o envio.</p>
-    <a href="/">Voltar para Home</a>
-</body>
-</html>
+{% extends "base.html" %}
+
+{% block title %}Pagamento Processado | {{ config.get('titulo_site', 'Loja') }}{% endblock %}
+
+{% block content %}
+<div class="container" style="max-width: 600px; margin: 60px auto; text-align: center; padding: 20px;">
+    
+    <div style="background: white; padding: 40px; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.1);">
+        <div style="width: 80px; height: 80px; background: #2ecc71; color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 40px; margin: 0 auto 20px;">
+            <i class="fas fa-check"></i>
+        </div>
+
+        <h1 style="color: #333; font-size: 24px; margin-bottom: 10px;">Pedido Recebido com Sucesso!</h1>
+        <p style="color: #666; font-size: 16px; line-height: 1.6;">
+            Obrigado por comprar na <strong>{{ config.get('titulo_site') }}</strong>.<br>
+            O status do seu pagamento será atualizado automaticamente em nosso sistema.
+        </p>
+
+        <hr style="border: 0; border-top: 1px solid #eee; margin: 30px 0;">
+
+        <div style="text-align: left; background: #f9f9f9; padding: 20px; border-radius: 10px;">
+            <h4 style="margin-top: 0; font-size: 14px; color: #888; text-transform: uppercase;">Próximos Passos:</h4>
+            <ul style="padding-left: 20px; color: #444; font-size: 14px; line-height: 2;">
+                <li>Você receberá um e-mail de confirmação.</li>
+                <li>Assim que o envio for postado, enviaremos o código de rastreio.</li>
+                <li>Qualquer dúvida, chame no nosso suporte abaixo.</li>
+            </ul>
+        </div>
+
+        {% set whatsapp_limpo = config.get('contato_whatsapp', '')|replace('(', '')|replace(')', '')|replace('-', '')|replace(' ', '') %}
+        <a href="https://wa.me/{{ whatsapp_limpo }}" target="_blank" 
+           style="display: block; background: #25d366; color: white; text-decoration: none; padding: 15px; border-radius: 8px; font-weight: bold; margin-top: 25px; transition: 0.3s;">
+            <i class="fab fa-whatsapp"></i> SUPORTE VIA WHATSAPP
+        </a>
+
+        <a href="{{ url_for('homepage') }}" style="display: inline-block; margin-top: 20px; color: #888; text-decoration: none; font-size: 14px;">
+            <i class="fas fa-arrow-left"></i> Voltar para a loja
+        </a>
+    </div>
+
+    <div style="margin-top: 30px; color: #aaa; font-size: 12px;">
+        <i class="fas fa-lock"></i> Compra segura via Mercado Pago e Criptografia SSL.
+    </div>
+</div>
+{% endblock %}

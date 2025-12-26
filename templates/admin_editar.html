@@ -5,99 +5,116 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% if produto %}Editar{% else %}Adicionar{% endif %} Produto</title>
     <style>
-        body { font-family: sans-serif; padding: 20px; }
-        h2 { border-bottom: 2px solid #ccc; padding-bottom: 10px; }
-        label { display: block; margin-top: 10px; font-weight: bold; }
-        input[type="text"], input[type="number"], textarea {
-            width: 100%;
-            padding: 8px;
-            margin-top: 5px;
-            box-sizing: border-box;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-        }
-        button[type="submit"] {
-            margin-top: 20px;
-            padding: 10px 15px;
-            background-color: #007bff;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
+        body { font-family: 'Segoe UI', sans-serif; padding: 20px; background-color: #f4f7f6; }
+        .container { max-width: 800px; margin: 0 auto; background: white; padding: 30px; border-radius: 12px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
+        h2 { border-bottom: 2px solid #007bff; padding-bottom: 10px; color: #333; }
+        h3 { margin-top: 25px; color: #444; border-left: 4px solid #007bff; padding-left: 10px; }
+        label { display: block; margin-top: 15px; font-weight: bold; color: #444; }
+        input[type="text"], input[type="number"], textarea, input[type="file"], input[type="datetime-local"] {
+            width: 100%; padding: 12px; margin-top: 5px; box-sizing: border-box;
+            border: 1px solid #ddd; border-radius: 8px; font-size: 16px;
         }
         .oferta-box {
-            border: 2px solid darkred;
-            padding: 15px;
-            margin: 20px 0;
-            background-color: #ffeaea;
-            border-radius: 5px;
+            border: 2px dashed #ff4757; padding: 20px; margin: 25px 0;
+            background-color: #fffaf0; border-radius: 10px;
         }
+        .logistica-box {
+            border: 2px solid #3483fa; padding: 20px; margin: 25px 0;
+            background-color: #f0f5ff; border-radius: 10px;
+        }
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+        button[type="submit"] {
+            margin-top: 30px; width: 100%; padding: 15px;
+            background-color: #2ed573; color: white; border: none;
+            border-radius: 8px; font-size: 18px; font-weight: bold; cursor: pointer;
+            transition: 0.3s;
+        }
+        button[type="submit"]:hover { background-color: #26af5f; transform: scale(1.01); }
+        .current-file { font-size: 12px; color: #666; margin-top: 5px; background: #eee; padding: 4px; border-radius: 4px; }
     </style>
 </head>
 <body>
-    <h2>{% if produto %}Editar Produto: {{ produto.nome }}{% else %}Adicionar Novo Produto{% endif %}</h2>
-    <p><a href="{{ url_for('admin_dashboard') }}">Voltar para o Dashboard</a></p>
-    <hr>
+    <div class="container">
+        <h2>{% if produto %}Editar: {{ produto.nome }}{% else %}Adicionar Novo Produto{% endif %}</h2>
+        <p><a href="{{ url_for('admin_dashboard') }}" style="text-decoration: none; color: #007bff; font-weight: bold;">← Voltar ao Painel</a></p>
 
-    <form method="POST" enctype="multipart/form-data">
+        <form method="POST" enctype="multipart/form-data">
+            <label for="id">ID do Produto (Sem espaços):</label>
+            <input type="text" id="id" name="id" value="{{ produto.id if produto else '' }}" {% if produto %}readonly style="background:#eee;"{% endif %} required>
 
-        <label for="id">ID do Produto (Único):</label>
-        <input type="text" id="id" name="id" 
-               value="{% if produto %}{{ produto.get('id') }}{% endif %}" 
-               {% if produto %}readonly{% else %}required{% endif %}><br>
+            <label for="nome">Nome do Produto:</label>
+            <input type="text" id="nome" name="nome" value="{{ produto.nome if produto else '' }}" required>
 
-        <label for="nome">Nome:</label>
-        <input type="text" id="nome" name="nome" value="{% if produto %}{{ produto.get('nome') }}{% endif %}" required><br>
+            <label for="preco">Preço de Venda (R$):</label>
+            <input type="number" id="preco" name="preco" step="0.01" value="{{ produto.preco if produto else '' }}" required>
 
-        <label for="preco">Preço Normal (R$):</label>
-        <input type="number" id="preco" name="preco" step="0.01" value="{% if produto %}{{ produto.get('preco') }}{% endif %}" required><br>
+            <label for="descricao">Descrição Completa:</label>
+            <textarea id="descricao" name="descricao" rows="5" required>{{ produto.descricao if produto else '' }}</textarea>
 
-        <label for="descricao">Descrição:</label>
-        <textarea id="descricao" name="descricao" rows="4" required>{% if produto %}{{ produto.get('descricao') }}{% endif %}</textarea><br>
+            <div class="logistica-box">
+                <h3 style="margin-top:0; color: #3483fa;">📦 Logística e Benefícios</h3>
+                <div class="grid-2">
+                    <div>
+                        <label for="estoque">Estoque Atual:</label>
+                        <input type="number" id="estoque" name="estoque" value="{{ produto.estoque if produto else '50' }}">
+                    </div>
+                    <div>
+                        <label for="desconto_pix">Desconto no Pix (%):</label>
+                        <input type="number" id="desconto_pix" name="desconto_pix" value="{{ produto.desconto_pix if produto else '0' }}">
+                    </div>
+                </div>
+                
+                <div class="grid-2">
+                    <div>
+                        <label for="frete_gratis_valor">Frete Grátis acima de (R$):</label>
+                        <input type="number" id="frete_gratis_valor" name="frete_gratis_valor" step="0.01" value="{{ produto.frete_gratis_valor if produto else '0.00' }}">
+                    </div>
+                    <div>
+                        <label for="prazo_entrega">Prazo de Entrega (Texto):</label>
+                        <input type="text" id="prazo_entrega" name="prazo_entrega" value="{{ produto.prazo_entrega if produto else '7 e 12/jan' }}" placeholder="Ex: 5 a 10 dias">
+                    </div>
+                </div>
 
-        <hr>
+                <label for="tempo_preparo">Tempo de Preparo/Postagem:</label>
+                <input type="text" id="tempo_preparo" name="tempo_preparo" value="{{ produto.tempo_preparo if produto else '1 a 2 dias' }}">
+            </div>
 
-        <div class="oferta-box">
-            <h3>🔥 Configurações de Oferta Relâmpago</h3>
+            <div class="oferta-box">
+                <h3 style="margin-top:0; color: #ff4757;">🔥 Oferta Relâmpago</h3>
+                <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                    <input type="checkbox" name="em_oferta" value="1" style="width: 20px; height: 20px;" {% if produto and produto.em_oferta %}checked{% endif %}>
+                    Ativar Modo Oferta (Cronômetro)
+                </label>
 
-            <label>
-                <input type="checkbox" name="em_oferta" {% if produto and produto.get('em_oferta') %}checked{% endif %}> 
-                **Ativar Produto em Oferta** (Marque esta caixa para ativar o preço especial)
-            </label>
-            
-            <label for="novo_preco">Novo Preço (R$ da Oferta):</label>
-            <input type="number" id="novo_preco" name="novo_preco" step="0.01" 
-                   value="{% if produto and produto.get('novo_preco') %}{{ produto['novo_preco'] }}{% endif %}" 
-                   placeholder="Ex: 99.90 (Só será usado se a caixa acima estiver marcada)">
-            
-            <label for="oferta_fim">Data e Hora de Fim da Oferta (YYYY-MM-DD HH:MM:SS):</label>
-            <input type="text" id="oferta_fim" name="oferta_fim" 
-                   value="{% if produto and produto.get('oferta_fim') %}{{ produto['oferta_fim'] }}{% endif %}" 
-                   placeholder="Ex: 2026-01-01 10:00:00 (Obrigatório para o cronômetro)">
-        </div>
-        
-        <hr>
-        
-        <h3>Mídia (4 Imagens + 1 Vídeo)</h3>
+                <label for="novo_preco">Preço Promocional (R$):</label>
+                <input type="number" id="novo_preco" name="novo_preco" step="0.01" value="{{ produto.novo_preco if produto else '' }}">
 
-        {% for i in range(1, 5) %}
-            {% set img_path_key = 'img_path_' ~ i %}
-            <label for="imagem_{{ i }}">Imagem {{ i }}:</label>
-            {% if produto and produto[img_path_key] %}
-                {% set filename = produto[img_path_key].split('/')[-1] %}
-                <p>Arquivo atual: <a href="{{ url_for('static', filename='uploads/' + filename) }}" target="_blank">{{ filename }}</a></p>
+                <label for="oferta_fim">A oferta expira em:</label>
+                <input type="datetime-local" id="oferta_fim" name="oferta_fim" value="{{ produto.oferta_fim if produto else '' }}">
+            </div>
+
+            <h3>Mídia do Produto</h3>
+            <div class="grid-2">
+                {% for i in range(1, 5) %}
+                    {% set field = 'img_path_' ~ i %}
+                    <div>
+                        <label>Imagem {{ i }}:</label>
+                        {% if produto and produto[field] %}
+                            <div class="current-file">📁 {{ produto[field].split('/')[-1] }}</div>
+                        {% endif %}
+                        <input type="file" name="imagem_{{ i }}" accept="image/*">
+                    </div>
+                {% endfor %}
+            </div>
+
+            <label>Vídeo Demonstrativo:</label>
+            {% if produto and produto.video_path %}
+                <div class="current-file">🎥 {{ produto.video_path.split('/')[-1] }}</div>
             {% endif %}
-            <input type="file" id="imagem_{{ i }}" name="imagem_{{ i }}" accept="image/*"><br>
-        {% endfor %}
+            <input type="file" name="video" accept="video/*">
 
-        <label for="video">Vídeo:</label>
-        {% if produto and produto['video_path'] %}
-            {% set filename = produto['video_path'].split('/')[-1] %}
-            <p>Arquivo atual: <a href="{{ url_for('static', filename='uploads/' + filename) }}" target="_blank">{{ filename }}</a></p>
-        {% endif %}
-        <input type="file" id="video" name="video" accept="video/*"><br><br>
-
-        <button type="submit">Salvar Produto</button>
-    </form>
+            <button type="submit">🚀 SALVAR TODAS AS ALTERAÇÕES</button>
+        </form>
+    </div>
 </body>
 </html>

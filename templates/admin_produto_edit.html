@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% if produto %}Editar{% else %}Novo{% endif %} Produto | Admin</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #1a73e8;
+            --offer: #d93025;
+            --bg: #f8f9fa;
+        }
+        body { font-family: 'Segoe UI', sans-serif; background-color: var(--bg); color: #333; margin: 0; padding: 20px; }
+        .container { max-width: 900px; margin: 0 auto; background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        
+        .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #eee; padding-bottom: 15px; margin-bottom: 25px; }
+        h2 { margin: 0; color: var(--primary); }
+        
+        label { display: block; margin-top: 15px; font-weight: 600; font-size: 14px; color: #555; }
+        input[type="text"], input[type="number"], input[type="datetime-local"], textarea {
+            width: 100%; padding: 12px; margin-top: 5px; border: 1px solid #ddd; border-radius: 8px; font-size: 15px; transition: 0.3s;
+        }
+        input:focus, textarea:focus { border-color: var(--primary); outline: none; box-shadow: 0 0 0 3px rgba(26, 115, 232, 0.1); }
+
+        .oferta-box {
+            border: 1px solid #f5c2c7; padding: 20px; margin: 25px 0; background-color: #fff8f8; border-radius: 10px;
+        }
+        .oferta-box h3 { margin-top: 0; color: var(--offer); font-size: 1.1rem; display: flex; align-items: center; gap: 8px; }
+
+        .media-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; margin-top: 10px; }
+        .media-item { background: #f1f3f4; padding: 15px; border-radius: 8px; text-align: center; border: 1px dashed #ccc; }
+        .preview-img { width: 100%; height: 100px; object-fit: cover; border-radius: 4px; margin-bottom: 8px; background: #ddd; }
+
+        .btn-save {
+            width: 100%; padding: 15px; background-color: var(--primary); color: white; border: none;
+            border-radius: 8px; cursor: pointer; font-size: 16px; font-weight: bold; margin-top: 30px; transition: 0.3s;
+        }
+        .btn-save:hover { background-color: #1557b0; transform: translateY(-2px); }
+        
+        .btn-back { text-decoration: none; color: #666; font-size: 14px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h2>{% if produto %}<i class="fas fa-edit"></i> Editar: {{ produto.nome }}{% else %}<i class="fas fa-plus-circle"></i> Novo Produto{% endif %}</h2>
+            <a href="{{ url_for('admin_dashboard') }}" class="btn-back">← Voltar</a>
+        </div>
+
+        <form method="POST" enctype="multipart/form-data">
+            <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 20px;">
+                <div>
+                    <label for="id">Código SKU (ID):</label>
+                    <input type="text" id="id" name="id" value="{{ produto.id if produto else '' }}" {% if produto %}readonly style="background:#eee"{% else %}required{% endif %}>
+                </div>
+                <div>
+                    <label for="nome">Nome do Produto:</label>
+                    <input type="text" id="nome" name="nome" value="{{ produto.nome if produto else '' }}" required>
+                </div>
+            </div>
+
+            <label for="preco">Preço Base (R$):</label>
+            <input type="number" id="preco" name="preco" step="0.01" value="{{ produto.preco if produto else '' }}" required>
+
+            <label for="descricao">Descrição Completa:</label>
+            <textarea id="descricao" name="descricao" rows="5" required>{{ produto.descricao if produto else '' }}</textarea>
+
+            <div class="oferta-box">
+                <h3><i class="fas fa-bolt"></i> Oferta Relâmpago</h3>
+                <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; background: white; padding: 10px; border-radius: 6px; border: 1px solid #eee;">
+                    <input type="checkbox" name="em_oferta" style="width: 20px; height: 20px;" {% if produto and produto.em_oferta %}checked{% endif %}> 
+                    Ativar cronômetro e preço promocional
+                </label>
+                
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 15px;">
+                    <div>
+                        <label for="novo_preco">Preço em Oferta (R$):</label>
+                        <input type="number" id="novo_preco" name="novo_preco" step="0.01" value="{{ produto.novo_preco if produto else '' }}">
+                    </div>
+                    <div>
+                        <label for="oferta_fim">Expira em:</label>
+                        <input type="datetime-local" id="oferta_fim" name="oferta_fim" value="{{ produto.oferta_fim if produto else '' }}">
+                    </div>
+                </div>
+            </div>
+
+            <h3>Mídia do Produto</h3>
+            <div class="media-grid">
+                {% for i in range(1, 5) %}
+                {% set img_key = 'img_path_' ~ i %}
+                <div class="media-item">
+                    {% if produto and produto[img_key] %}
+                        <img src="{{ produto[img_key] }}" class="preview-img">
+                    {% else %}
+                        <div class="preview-img" style="display: flex; align-items: center; justify-content: center; font-size: 12px; color: #999;">Sem Foto</div>
+                    {% endif %}
+                    <label style="font-size: 11px; margin: 0;">Foto {{ i }}</label>
+                    <input type="file" name="img_{{ i }}" accept="image/*" style="font-size: 10px; margin-top: 5px; width: 100%;">
+                </div>
+                {% endfor %}
+            </div>
+
+            <label for="video"><i class="fas fa-video"></i> Vídeo de Demonstração:</label>
+            <input type="file" id="video" name="video" accept="video/*">
+            {% if produto and produto.video_path %}
+                <p style="font-size: 12px; color: var(--primary);">✔ Vídeo já cadastrado</p>
+            {% endif %}
+
+            <button type="submit" class="btn-save">
+                <i class="fas fa-save"></i> SALVAR PRODUTO NO ESTOQUE
+            </button>
+        </form>
+    </div>
+</body>
+</html>

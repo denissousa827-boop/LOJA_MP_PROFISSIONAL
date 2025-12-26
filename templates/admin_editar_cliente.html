@@ -3,54 +3,174 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Editar Cliente</title>
+    <title>Editar Cliente | Painel Administrativo</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
-        body { font-family: Arial, sans-serif; padding: 20px; background-color: #f4f4f4; }
-        .container { max-width: 600px; margin: 0 auto; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
-        h2 { color: #007bff; border-bottom: 2px solid #eee; padding-bottom: 10px; }
-        label { display: block; margin-top: 15px; margin-bottom: 5px; font-weight: bold; }
-        input[type="text"], input[type="email"] { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
-        input[readonly] { background-color: #eee; cursor: not-allowed; }
-        button[type="submit"] { 
-            display: block;
-            width: 100%; 
-            padding: 15px; 
-            background-color: #28a745; 
-            color: white; 
-            border: none; 
-            border-radius: 4px; 
-            cursor: pointer; 
-            font-size: 1.2em; 
-            margin-top: 30px;
-            transition: background-color 0.2s;
+        :root {
+            --primary: #00cec9;
+            --dark: #2d3436;
+            --gray: #636e72;
+            --bg: #f1f2f6;
         }
-        button[type="submit"]:hover { background-color: #1e7e34; }
-        .back-link { margin-bottom: 20px; }
+
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            background-color: var(--bg); 
+            margin: 0; 
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .card {
+            background: white;
+            width: 100%;
+            max-width: 500px;
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .header i {
+            font-size: 50px;
+            color: var(--primary);
+            margin-bottom: 10px;
+        }
+
+        .header h2 {
+            margin: 0;
+            color: var(--dark);
+            font-size: 24px;
+        }
+
+        .header p {
+            color: var(--gray);
+            margin: 5px 0 0;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: var(--dark);
+            font-size: 14px;
+        }
+
+        .input-wrapper {
+            position: relative;
+        }
+
+        .input-wrapper i {
+            position: absolute;
+            left: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--gray);
+        }
+
+        input {
+            width: 100%;
+            padding: 12px 15px 12px 45px;
+            border: 2px solid #dfe6e9;
+            border-radius: 10px;
+            font-size: 16px;
+            box-sizing: border-box;
+            transition: all 0.3s ease;
+        }
+
+        input:focus {
+            border-color: var(--primary);
+            outline: none;
+            box-shadow: 0 0 8px rgba(0,206,201,0.2);
+        }
+
+        .btn-save {
+            width: 100%;
+            padding: 15px;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background 0.3s;
+            margin-top: 10px;
+        }
+
+        .btn-save:hover {
+            background: #00b8b8;
+        }
+
+        .back-link {
+            display: block;
+            text-align: center;
+            margin-top: 20px;
+            color: var(--gray);
+            text-decoration: none;
+            font-size: 14px;
+            transition: color 0.3s;
+        }
+
+        .back-link:hover {
+            color: var(--dark);
+        }
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="back-link">
-            <a href="{{ url_for('admin_clientes') }}">← Voltar para a Lista de Clientes</a>
+
+    <div class="card">
+        <div class="header">
+            <i class="fas fa-user-circle"></i>
+            <h2>Editar Cliente</h2>
+            <p>Atualize as informações de contato do cliente</p>
         </div>
-        
-        <h2>Editar Cliente: {{ cliente.nome_completo }}</h2>
-        
+
         <form method="POST">
-            <label for="id">ID do Cliente:</label>
-            <input type="text" id="id" name="id" value="{{ cliente.id }}" readonly><br>
-            
-            <label for="nome_completo">Nome Completo:</label>
-            <input type="text" id="nome_completo" name="nome_completo" value="{{ cliente.nome_completo }}" required><br>
-            
-            <label for="whatsapp">WhatsApp:</label>
-            <input type="text" id="whatsapp" name="whatsapp" value="{{ cliente.whatsapp }}" required><br>
-            
-            <label for="email">E-mail:</label>
-            <input type="email" id="email" name="email" value="{{ cliente.email }}" required><br>
-            
-            <button type="submit">Salvar Alterações</button>
+            <div class="form-group">
+                <label for="nome">Nome Completo</label>
+                <div class="input-wrapper">
+                    <i class="fas fa-user"></i>
+                    <input type="text" id="nome" name="nome" value="{{ cliente.nome_completo }}" required>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="whatsapp">WhatsApp / Celular</label>
+                <div class="input-wrapper">
+                    <i class="fab fa-whatsapp"></i>
+                    <input type="text" id="whatsapp" name="whatsapp" value="{{ cliente.whatsapp }}" required placeholder="(00) 00000-0000">
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="email">E-mail</label>
+                <div class="input-wrapper">
+                    <i class="fas fa-envelope"></i>
+                    <input type="email" id="email" name="email" value="{{ cliente.email }}" required placeholder="exemplo@email.com">
+                </div>
+            </div>
+
+            <button type="submit" class="btn-save">
+                <i class="fas fa-check"></i> Salvar Alterações
+            </button>
         </form>
+
+        <a href="{{ url_for('admin_clientes') }}" class="back-link">
+            <i class="fas fa-arrow-left"></i> Voltar para a lista
+        </a>
     </div>
+
 </body>
 </html>

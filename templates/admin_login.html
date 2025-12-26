@@ -4,21 +4,36 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login - Painel Admin</title>
+    <style>
+        body { font-family: sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; background: #f4f4f4; margin: 0; }
+        .login-card { background: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); width: 300px; }
+        input { width: 100%; padding: 10px; margin: 10px 0; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
+        button { width: 100%; padding: 10px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        .error-msg { color: #721c24; background: #f8d7da; padding: 10px; border-radius: 4px; font-size: 14px; margin-bottom: 10px; text-align: center; }
+    </style>
 </head>
 <body>
-    <h2>Login de Administrador</h2>
-    <form method="POST">
-        {% if error %}
-            <p style="color: red;">{{ error }}</p>
-        {% endif %}
-        <label for="username">Usuário:</label><br>
-        <input type="text" id="username" name="username" required><br><br>
-        
-        <label for="password">Senha:</label><br>
-        <input type="password" id="password" name="password" required><br><br>
-        
-        <button type="submit">Entrar</button>
-    </form>
-    <p><a href="{{ url_for('homepage') }}">Voltar para a Loja</a></p>
+    <div class="login-card">
+        <h2 style="text-align: center;">Admin</h2>
+
+        {% with messages = get_flashed_messages() %}
+          {% if messages %}
+            {% for message in messages %}
+              <div class="error-msg">{{ message }}</div>
+            {% endfor %}
+          {% endif %}
+        {% endwith %}
+
+        <form method="POST">
+            <label for="username">Usuário:</label>
+            <input type="text" id="username" name="username" required>
+            
+            <label for="password">Senha:</label>
+            <input type="password" id="password" name="password" required>
+            
+            <button type="submit">Entrar</button>
+        </form>
+        <p style="text-align: center;"><a href="{{ url_for('homepage') }}">Voltar para a Loja</a></p>
+    </div>
 </body>
 </html>

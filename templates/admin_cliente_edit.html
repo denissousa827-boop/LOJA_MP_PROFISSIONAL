@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestão de Clientes</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; background-color: #f4f4f4; }
+        .container { max-width: 1000px; margin: 0 auto; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+        h2 { color: #007bff; border-bottom: 2px solid #eee; padding-bottom: 10px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background-color: #f2f2f2; }
+        td a, td input[type="submit"] { margin-right: 10px; text-decoration: none; padding: 5px 10px; border-radius: 4px; }
+        td a { background-color: #ff9900; color: white; }
+        td input[type="submit"] { background-color: #dc3545; color: white; border: none; cursor: pointer; }
+        .user-info a { margin-right: 15px; color: #333; }
+        .actions { margin-top: 20px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>Gestão de Clientes (Newsletter)</h2>
+        <div class="user-info actions">
+            <a href="{{ url_for('admin_dashboard') }}">← Voltar para a Dashboard</a>
+        </div>
+
+        {% if not clientes %}
+            <p style="padding-top: 20px;">Nenhum cliente cadastrado ainda.</p>
+        {% else %}
+            <p>Total de Clientes Cadastrados: <strong>{{ clientes|length }}</strong></p>
+            <table>
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Nome Completo</th>
+                        <th>WhatsApp</th>
+                        <th>E-mail</th>
+                        <th>Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for cliente in clientes %}
+                    <tr>
+                        <td>{{ cliente.id }}</td>
+                        <td>{{ cliente.nome_completo }}</td>
+                        <td>{{ cliente.whatsapp }}</td>
+                        <td>{{ cliente.email }}</td>
+                        <td>
+                            <a href="{{ url_for('admin_editar_cliente', id_cliente=cliente.id) }}">Editar</a>
+                            <form method="POST" action="{{ url_for('admin_delete_cliente', id_cliente=cliente.id) }}" style="display:inline;">
+                                <input type="submit" value="Excluir" onclick="return confirm('Tem certeza que deseja excluir o cliente {{ cliente.nome_completo }}?');">
+                            </form>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% endif %}
+    </div>
+</body>
+</html>

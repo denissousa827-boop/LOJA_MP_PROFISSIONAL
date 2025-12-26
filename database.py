@@ -1,23 +1,20 @@
-# database.py
 import sqlite3
 import datetime
 from werkzeug.security import generate_password_hash, check_password_hash
 
-# 1. Configuração do Banco de Dados
+# Configuração do Banco de Dados
 DB_NAME = 'loja.db'
 
 def create_connection():
-    """Cria uma conexão com o banco de dados SQLite e configura o row_factory."""
     conn = sqlite3.connect(DB_NAME)
-    conn.row_factory = sqlite3.Row  # Acessa colunas por nome
+    conn.row_factory = sqlite3.Row
     return conn
 
 def init_db():
-    """Inicializa o banco de dados e configura as tabelas."""
     conn = create_connection()
     cursor = conn.cursor()
 
-    # Tabela de Produtos
+    # Tabela de Produtos Atualizada com campos Profissionais
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS produtos (
             id TEXT PRIMARY KEY,
@@ -25,38 +22,23 @@ def init_db():
             preco REAL NOT NULL,
             descricao TEXT,
             img_path_1 TEXT, img_path_2 TEXT, img_path_3 TEXT, img_path_4 TEXT,
-            video_path TEXT, em_oferta INTEGER DEFAULT 0,
-            novo_preco REAL, oferta_fim TEXT
+            video_path TEXT, 
+            em_oferta INTEGER DEFAULT 0,
+            novo_preco REAL, 
+            oferta_fim TEXT,
+            
+            -- Novos Campos Estilo Mercado Livre
+            desconto_pix INTEGER DEFAULT 0,
+            estoque INTEGER DEFAULT 0,
+            frete_gratis_valor REAL DEFAULT 0.0,
+            prazo_entrega TEXT DEFAULT '5 a 15 dias úteis',
+            tempo_preparo TEXT DEFAULT '1 a 2 dias'
         )
     """)
 
-    # Tabela de Usuários Admin
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS users (
-            id INTEGER PRIMARY KEY,
-            username TEXT UNIQUE NOT NULL,
-            password_hash TEXT NOT NULL
-        )
-    """)
-
-    # Tabela de Clientes
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS clientes (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            nome_completo TEXT NOT NULL,
-            whatsapp TEXT,
-            email TEXT UNIQUE NOT NULL,
-            data_cadastro TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )
-    """)
-
-    # Tabela de Configurações
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS configuracoes (
-            chave TEXT PRIMARY KEY,
-            valor TEXT
-        )
-    """)
+    # Tabelas Auxiliares
+    cursor.execute("CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY, username TEXT UNIQUE, password_hash TEXT)")
+    cursor.execute("CREATE TABLE IF NOT EXISTS configuracoes (chave TEXT PRIMARY KEY, valor TEXT)")
 
     # Tabela de Vendas
     cursor.execute("""
@@ -73,120 +55,102 @@ def init_db():
         )
     """)
 
-    # --- CONFIGURAÇÃO DO ADMIN ---
-    admin_username = "utbdenis6752"
-    admin_password = "675201"
-    admin_hash = generate_password_hash(admin_password)
+    # Criar Admin Padrão
+    admin_user = "utbdenis6752"
+    admin_pass = "675201"
+    cursor.execute("SELECT * FROM users WHERE username=?", (admin_user,))
+    if not cursor.fetchone():
+        cursor.execute("INSERT INTO users (username, password_hash) VALUES (?, ?)",
+                       (admin_user, generate_password_hash(admin_pass)))
 
-    cursor.execute("INSERT OR IGNORE INTO users (username, password_hash) VALUES (?, ?)", (admin_username, admin_hash))
+    conn.commit()
+    # Executa a migração caso o banco já exista mas falte colunas
+    migrar_banco(conn)
+    conn.close()
 
-    # Preenche configurações iniciais caso não existam
-    config_keys = [
-        ('contato_email', 'suporte@minhaloja.com.br'),
-        ('contato_whatsapp', '(99) 99999-9999'),
-        ('header_color', '#181818'),
-        ('footer_color', '#303030')
+def migrar_banco(conn):
+    """ Adiciona novas colunas caso o banco já exista sem elas """
+    cursor = conn.cursor()
+    colunas_novas = [
+        ('desconto_pix', 'INTEGER DEFAULT 0'),
+        ('estoque', 'INTEGER DEFAULT 0'),
+        ('frete_gratis_valor', 'REAL DEFAULT 0.0'),
+        ('prazo_entrega', 'TEXT DEFAULT "7 e 12/jan"'),
+        ('tempo_preparo', 'TEXT DEFAULT "1 a 2 dias"')
     ]
-    for chave, valor in config_keys:
-        cursor.execute("INSERT OR IGNORE INTO configuracoes (chave, valor) VALUES (?, ?)", (chave, valor))
-
-    conn.commit()
-    conn.close()
-
-# --- FUNÇÕES DE VENDAS ---
-
-def registrar_venda(nome_cliente, email_cliente, whatsapp_cliente, produto_nome, quantidade, valor_total):
-    """Salva uma nova venda e retorna o ID gerado para o Mercado Pago."""
-    conn = create_connection()
-    cursor = conn.cursor()
-    data_atual = datetime.datetime.now().strftime("%d/%m/%Y %H:%M")
-    cursor.execute('''
-        INSERT INTO vendas (data, nome_cliente, email_cliente, whatsapp_cliente, produto_nome, quantidade, valor_total, status)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-    ''', (data_atual, nome_cliente, email_cliente, whatsapp_cliente, produto_nome, quantidade, valor_total, 'pendente'))
     
-    id_venda = cursor.lastrowid # Pega o ID que acabou de ser criado
+    for nome_col, tipo in colunas_novas:
+        try:
+            cursor.execute(f"ALTER TABLE produtos ADD COLUMN {nome_col} {tipo}")
+        except sqlite3.OperationalError:
+            pass # Coluna já existe
     conn.commit()
-    conn.close()
-    return id_venda
-
-def atualizar_status_venda(id_venda, novo_status):
-    """Muda o status da venda (ex: para 'pago') quando o Webhook avisar."""
-    conn = create_connection()
-    cursor = conn.cursor()
-    # Forçamos o status para minúsculo para bater com o template (pago/pendente)
-    cursor.execute("UPDATE vendas SET status=? WHERE id=?", (novo_status.lower(), id_venda))
-    conn.commit()
-    conn.close()
-
-def get_vendas():
-    """Retorna todas as vendas para o Admin."""
-    conn = create_connection()
-    vendas = conn.execute("SELECT * FROM vendas ORDER BY id DESC").fetchall()
-    conn.close()
-    return [dict(v) for v in vendas]
-
-def get_venda_por_id(id_venda):
-    """Busca detalhes de uma venda."""
-    conn = create_connection()
-    venda = conn.execute("SELECT * FROM vendas WHERE id=?", (id_venda,)).fetchone()
-    conn.close()
-    return dict(venda) if venda else None
-
-# --- FUNÇÕES DE LOGIN ---
-
-def get_user(username):
-    conn = create_connection()
-    user = conn.execute("SELECT * FROM users WHERE username=?", (username,)).fetchone()
-    conn.close()
-    return user
-
-def is_valid_login(username, password):
-    user = get_user(username)
-    if user and check_password_hash(user['password_hash'], password):
-        return dict(user)
-    return None
 
 # --- FUNÇÕES DE PRODUTOS ---
 
 def get_produtos():
     conn = create_connection()
-    produtos = conn.execute("SELECT * FROM produtos").fetchall()
-    conn.close()
-    return [dict(p) for p in produtos]
-
-def get_produtos_em_oferta():
-    conn = create_connection()
-    sql = "SELECT * FROM produtos WHERE em_oferta = 1 AND (oferta_fim IS NULL OR oferta_fim > ?)"
-    agora = datetime.datetime.now().isoformat()
-    produtos = conn.execute(sql, (agora,)).fetchall()
+    produtos = conn.execute("SELECT * FROM produtos ORDER BY rowid DESC").fetchall()
     conn.close()
     return [dict(p) for p in produtos]
 
 def get_produto_por_id(id_produto):
+    if not id_produto: return None
     conn = create_connection()
-    produto = conn.execute("SELECT * FROM produtos WHERE id=?", (id_produto,)).fetchone()
+    produto = conn.execute("SELECT * FROM produtos WHERE id=?", (str(id_produto),)).fetchone()
     conn.close()
     return dict(produto) if produto else None
 
-def add_or_update_produto(id, nome, preco, descricao, img_paths, video_path, em_oferta=0, novo_preco=None, oferta_fim=None):
+def get_produtos_em_oferta():
+    conn = create_connection()
+    agora = datetime.datetime.now().strftime("%Y-%m-%dT%H:%M")
+    sql = "SELECT * FROM produtos WHERE em_oferta = 1 AND (oferta_fim IS NULL OR oferta_fim > ?) ORDER BY rowid DESC"
+    produtos = conn.execute(sql, (agora,)).fetchall()
+    conn.close()
+    return [dict(p) for p in produtos]
+
+def add_or_update_produto(dados):
     conn = create_connection()
     cursor = conn.cursor()
-    if not id: 
-        id = str(int(datetime.datetime.now().timestamp()))[-8:]
-    
-    img_1, img_2, img_3, img_4 = img_paths + [None] * (4 - len(img_paths))
-    oferta_status = 1 if em_oferta else 0
-    
-    if get_produto_por_id(id):
-        sql = """UPDATE produtos SET nome=?, preco=?, descricao=?, img_path_1=?, img_path_2=?, 
-                 img_path_3=?, img_path_4=?, video_path=?, em_oferta=?, novo_preco=?, oferta_fim=? WHERE id=?"""
-        cursor.execute(sql, (nome, preco, descricao, img_1, img_2, img_3, img_4, video_path, oferta_status, novo_preco, oferta_fim, id))
-    else:
-        sql = """INSERT INTO produtos (nome, preco, descricao, img_path_1, img_path_2, img_path_3, img_path_4, 
-                 video_path, em_oferta, novo_preco, oferta_fim, id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"""
-        cursor.execute(sql, (nome, preco, descricao, img_1, img_2, img_3, img_4, video_path, oferta_status, novo_preco, oferta_fim, id))
-    
+
+    id_prod = dados.get('id')
+    if not id_prod:
+        id_prod = str(int(datetime.datetime.now().timestamp()))[-8:]
+
+    atual = get_produto_por_id(id_prod) or {}
+
+    sql = """INSERT OR REPLACE INTO produtos
+             (id, nome, preco, descricao, img_path_1, img_path_2, img_path_3, img_path_4,
+              video_path, em_oferta, novo_preco, oferta_fim, 
+              desconto_pix, estoque, frete_gratis_valor, prazo_entrega, tempo_preparo)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"""
+
+    try:
+        preco = float(str(dados.get('preco', 0)).replace(',', '.'))
+        novo_preco = float(str(dados.get('novo_preco', 0)).replace(',', '.')) if dados.get('novo_preco') else None
+        frete_gratis = float(str(dados.get('frete_gratis_valor', 0)).replace(',', '.'))
+    except:
+        preco, novo_preco, frete_gratis = 0.0, None, 0.0
+
+    cursor.execute(sql, (
+        id_prod,
+        dados.get('nome'),
+        preco,
+        dados.get('descricao'),
+        dados.get('img_path_1') or atual.get('img_path_1'),
+        dados.get('img_path_2') or atual.get('img_path_2'),
+        dados.get('img_path_3') or atual.get('img_path_3'),
+        dados.get('img_path_4') or atual.get('img_path_4'),
+        dados.get('video_path') or atual.get('video_path'),
+        1 if dados.get('em_oferta') else 0,
+        novo_preco,
+        dados.get('oferta_fim'),
+        int(dados.get('desconto_pix', 0)),
+        int(dados.get('estoque', 0)),
+        frete_gratis,
+        dados.get('prazo_entrega', '7 e 12/jan'),
+        dados.get('tempo_preparo', '1 a 2 dias')
+    ))
     conn.commit()
     conn.close()
 
@@ -196,56 +160,49 @@ def delete_produto(id_produto):
     conn.commit()
     conn.close()
 
-# --- FUNÇÕES DE CLIENTES ---
+# --- VENDAS E CONFIGS ---
 
-def add_cliente(nome_completo, whatsapp, email):
+def registrar_venda(nome_cliente, email_cliente, whatsapp_cliente, produto_nome, quantidade, valor_total):
     conn = create_connection()
-    try:
-        conn.execute("INSERT INTO clientes (nome_completo, whatsapp, email) VALUES (?, ?, ?)", (nome_completo, whatsapp, email))
-        conn.commit()
-        return True
-    except:
-        return False
-    finally:
-        conn.close()
-
-def get_clientes():
-    conn = create_connection()
-    clientes = conn.execute("SELECT * FROM clientes ORDER BY data_cadastro DESC").fetchall()
-    conn.close()
-    return [dict(c) for c in clientes]
-
-def get_cliente_por_id(id_cliente):
-    conn = create_connection()
-    cliente = conn.execute("SELECT * FROM clientes WHERE id=?", (id_cliente,)).fetchone()
-    conn.close()
-    return dict(cliente) if cliente else None
-
-def update_cliente(id_cliente, nome_completo, whatsapp, email):
-    conn = create_connection()
-    conn.execute("UPDATE clientes SET nome_completo=?, whatsapp=?, email=? WHERE id=?", (nome_completo, whatsapp, email, id_cliente))
+    cursor = conn.cursor()
+    data_atual = datetime.datetime.now().strftime("%d/%m/%Y %H:%M")
+    cursor.execute('''INSERT INTO vendas (data, nome_cliente, email_cliente, whatsapp_cliente, produto_nome, quantidade, valor_total)
+                      VALUES (?, ?, ?, ?, ?, ?, ?)''',
+                   (data_atual, nome_cliente, email_cliente, whatsapp_cliente, produto_nome, quantidade, valor_total))
+    id_venda = cursor.lastrowid
     conn.commit()
     conn.close()
+    return id_venda
 
-def delete_cliente(id_cliente):
+def get_vendas():
     conn = create_connection()
-    conn.execute("DELETE FROM clientes WHERE id=?", (id_cliente,))
-    conn.commit()
+    vendas = conn.execute("SELECT * FROM vendas ORDER BY id DESC").fetchall()
     conn.close()
-
-# --- FUNÇÕES DE CONFIGURAÇÃO ---
+    return [dict(v) for v in vendas]
 
 def get_configuracoes():
     conn = create_connection()
-    config_list = conn.execute("SELECT chave, valor FROM configuracoes").fetchall()
+    try:
+        config_list = conn.execute("SELECT chave, valor FROM configuracoes").fetchall()
+        config_dict = {item['chave']: item['valor'] for item in config_list}
+    except:
+        config_dict = {}
     conn.close()
-    return {item['chave']: item['valor'] for item in config_list}
+    return config_dict
 
 def update_configuracao(chave, valor):
     conn = create_connection()
-    conn.execute("INSERT OR REPLACE INTO configuracoes (chave, valor) VALUES (?, ?)", (chave, valor))
+    conn.execute("INSERT OR REPLACE INTO configuracoes (chave, valor) VALUES (?, ?)", (chave, str(valor)))
     conn.commit()
     conn.close()
+
+def is_valid_login(username, password):
+    conn = create_connection()
+    user = conn.execute("SELECT * FROM users WHERE username=?", (username,)).fetchone()
+    conn.close()
+    if user and check_password_hash(user['password_hash'], password):
+        return dict(user)
+    return None
 
 if __name__ == '__main__':
     init_db()

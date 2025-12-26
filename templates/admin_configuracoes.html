@@ -1,133 +1,76 @@
-<!DOCTYPE html>
-<html lang="pt-br">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Configurações da Loja</title>
-    <style>
-        body { font-family: Arial, sans-serif; padding: 20px; background-color: #f4f4f4; }
-        .container { max-width: 900px; margin: 0 auto; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
-        h2 { color: purple; border-bottom: 2px solid #eee; padding-bottom: 10px; }
-        h3 { color: #007bff; margin-top: 30px; border-bottom: 1px dashed #ccc; padding-bottom: 5px; }
-        label { display: block; margin-top: 15px; margin-bottom: 5px; font-weight: bold; }
-        input[type="text"], input[type="color"], input[type="file"], textarea { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
-        textarea { resize: vertical; min-height: 100px; }
-        button[type="submit"] {
-            display: block;
-            width: 100%;
-            padding: 15px;
-            background-color: purple;
-            color: white;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 1.2em;
-            margin-top: 30px;
-            transition: background-color 0.2s;
-        }
-        button[type="submit"]:hover { background-color: #6a0dad; }
-        .success { background-color: #d4edda; color: #155724; padding: 10px; border-radius: 4px; margin-bottom: 20px; }
-        .layout-config { background-color: #e6f7ff; border: 1px solid #91d5ff; padding: 15px; border-radius: 5px; margin-top: 20px;}
-        .color-group { display: flex; gap: 20px; }
-        .color-group > div { flex: 1; }
-        .color-group input[type="color"] { width: 100%; height: 40px; padding: 0; border: none; }
-        .current-file { font-size: 0.9em; color: gray; margin-bottom: 10px; }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <h2>⚙️ Configurações e Conteúdo Estático da Loja</h2>
-        <p><a href="{{ url_for('admin_dashboard') }}">← Voltar para o Dashboard</a></p>
+{% extends "base.html" %}
 
-        {% if success %}
-            <div class="success">{{ success }}</div>
-        {% endif %}
+{% block title %}Configurações do Sistema | Admin{% endblock %}
 
-        <form method="POST" enctype="multipart/form-data">
+{% block content %}
+<div class="container" style="margin-top: 30px; max-width: 900px; margin-bottom: 50px;">
+    <h2 style="margin-bottom: 25px; border-bottom: 2px solid #333; padding-bottom: 10px; color: #1a1a1a;">
+        <i class="fas fa-cogs"></i> Configurações da Loja
+    </h2>
 
-            <div class="layout-config">
-                <h3 style="color: #007bff; margin-top: 0;">🎨 Layout e Design (Logotipo e Cores)</h3>
+    {% with messages = get_flashed_messages() %}
+      {% if messages %}
+        {% for message in messages %}
+          <div style="padding: 15px; background-color: #d4edda; color: #155724; border-radius: 5px; margin-bottom: 20px;">
+            {{ message }}
+          </div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
 
-                <label for="logo_file">Logotipo da Loja (.png, .jpg, .svg):</label>
-                {% if config.get('logo_img') %}
-                    {% set logo_filename = config['logo_img'].split('/')[-1] %}
-                    <p class="current-file">Arquivo atual: <a href="{{ config['logo_img'] }}" target="_blank">{{ logo_filename }}</a></p>
-                {% else %}
-                    <p class="current-file">Nenhum logo cadastrado.</p>
-                {% endif %}
-                <input type="file" id="logo_file" name="logo_img" accept="image/*">
+    <form action="{{ url_for('admin_configuracoes') }}" method="POST" enctype="multipart/form-data" style="background: white; padding: 30px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
 
-                <hr>
-
-                <label for="banner_file">Banner Principal (1200x300 recomendado):</label>
-                {% if config.get('banner_img') %}
-                    {% set banner_filename = config['banner_img'].split('/')[-1] %}
-                    <p class="current-file">Arquivo atual: <a href="{{ config['banner_img'] }}" target="_blank">{{ banner_filename }}</a></p>
-                {% else %}
-                    <p class="current-file">Nenhum banner cadastrado.</p>
-                {% endif %}
-                <input type="file" id="banner_file" name="banner_img" accept="image/*">
-
-
-                <div class="color-group">
-                    <div>
-                        <label for="header_color">Cor de Fundo do Cabeçalho:</label>
-                        <input type="color" id="header_color" name="header_color"
-                                value="{{ config.get('header_color', '#181818') }}">
-                    </div>
-                    <div>
-                        <label for="footer_color">Cor de Fundo do Rodapé:</label>
-                        <input type="color" id="footer_color" name="footer_color"
-                                value="{{ config.get('footer_color', '#303030') }}">
-                    </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 25px;">
+            <div>
+                <h4 style="color: #007bff; border-bottom: 1px solid #eee; padding-bottom: 5px; margin-bottom: 15px;">Visual e Identidade</h4>
+                <div style="margin-bottom: 15px;">
+                    <label style="display:block; font-weight:bold;">Título do Site:</label>
+                    <input type="text" name="titulo_site" value="{{ config.get('titulo_site', '') }}" style="width: 100%; padding: 10px; border-radius: 5px; border: 1px solid #ccc;">
+                </div>
+                <div style="margin-bottom: 15px;">
+                    <label style="display:block; font-weight:bold;">Logo da Loja:</label>
+                    <input type="file" name="logo_img" style="width: 100%;">
+                </div>
+                <div style="margin-bottom: 15px;">
+                    <label style="display:block; font-weight:bold;">Cor do Cabeçalho (Hex):</label>
+                    <input type="color" name="header_color" value="{{ config.get('header_color', '#181818') }}" style="width: 100%; height: 40px; border: 1px solid #ccc; cursor: pointer; padding: 5px;">
                 </div>
             </div>
 
-            <hr>
+            <div>
+                <h4 style="color: #007bff; border-bottom: 1px solid #eee; padding-bottom: 5px; margin-bottom: 15px;">Contato e Suporte</h4>
+                <div style="margin-bottom: 15px;">
+                    <label style="display:block; font-weight:bold;">WhatsApp (com DDD):</label>
+                    <input type="text" name="contato_whatsapp" value="{{ config.get('contato_whatsapp', '') }}" placeholder="(11) 99999-9999" style="width: 100%; padding: 10px; border-radius: 5px; border: 1px solid #ccc;">
+                </div>
+                <div style="margin-bottom: 15px;">
+                    <label style="display:block; font-weight:bold;">E-mail de Suporte:</label>
+                    <input type="email" name="contato_email" value="{{ config.get('contato_email', '') }}" style="width: 100%; padding: 10px; border-radius: 5px; border: 1px solid #ccc;">
+                </div>
+                <div style="margin-bottom: 15px;">
+                    <label style="display:block; font-weight:bold;">CEP de Origem (Saída Frete):</label>
+                    <input type="text" name="cep_origem" value="{{ config.get('cep_origem', '') }}" placeholder="00000-000" style="width: 100%; padding: 10px; border-radius: 5px; border: 1px solid #ccc;">
+                </div>
+            </div>
+        </div>
 
-            <h3>Informações de Contato</h3>
-            <label for="contato_email">Email de Suporte:</label>
-            <input type="text" id="contato_email" name="contato_email" value="{{ config.get('contato_email', '') }}">
+        <div style="margin-top: 25px; background: #fff4f4; padding: 20px; border-radius: 8px; border: 1px solid #f5c6cb;">
+            <h4 style="color: #d10024; margin-top: 0;"><i class="fas fa-key"></i> Chaves de Integração</h4>
+            <div style="margin-bottom: 15px;">
+                <label style="display:block; font-weight:bold;">Mercado Pago Access Token:</label>
+                <input type="password" name="mercado_pago_token" value="{{ config.get('mercado_pago_token', '') }}" placeholder="APP_USR-..." style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 5px;">
+                <small style="color: #666;">Essencial para processar pagamentos no checkout.</small>
+            </div>
+            <div style="margin-bottom: 15px;">
+                <label style="display:block; font-weight:bold;">Melhor Envio Token (Bearer):</label>
+                <textarea name="melhor_envio_token" rows="3" placeholder="eyJhbG..." style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 5px; font-family: monospace;">{{ config.get('melhor_envio_token', '') }}</textarea>
+                <small style="color: #666;">Token de longa duração para cálculo automático de frete.</small>
+            </div>
+        </div>
 
-            <label for="contato_whatsapp">WhatsApp (Ex: (99) 99999-9999):</label>
-            <input type="text" id="contato_whatsapp" name="contato_whatsapp" value="{{ config.get('contato_whatsapp', '') }}">
-
-            <h3>Páginas Institucionais (Rodapé e Páginas Internas)</h3>
-
-            <label for="quem_somos">Quem Somos (Texto curto ou link):</label>
-            <textarea id="quem_somos" name="quem_somos">{{ config.get('quem_somos', '') }}</textarea>
-
-            <label for="politica_privacidade">Política de Privacidade (Texto Completo):</label>
-            <textarea id="politica_privacidade" name="politica_privacidade">{{ config.get('politica_privacidade', '') }}</textarea>
-
-            <label for="politica_reembolso">Política de Reembolso (Texto Completo):</label>
-            <textarea id="politica_reembolso" name="politica_reembolso">{{ config.get('politica_reembolso', '') }}</textarea>
-
-            <h3>Dúvidas Gerais / Links Úteis</h3>
-
-            <label for="formas_pagamento">Formas de Pagamento (Texto Completo):</label>
-            <textarea id="formas_pagamento" name="formas_pagamento">{{ config.get('formas_pagamento', '') }}</textarea>
-
-            <label for="entrega_frete">Entrega e Frete (Texto Completo):</label>
-            <textarea id="entrega_frete" name="entrega_frete">{{ config.get('entrega_frete', '') }}</textarea>
-
-            <label for="trocas_devolucoes">Trocas e Devoluções (Texto Completo):</label>
-            <textarea id="trocas_devolucoes" name="trocas_devolucoes">{{ config.get('trocas_devolucoes', '') }}</textarea>
-
-            <label for="garantia_seguranca">Garantia e Segurança (Texto Completo):</label>
-            <textarea id="garantia_seguranca" name="garantia_seguranca">{{ config.get('garantia_seguranca', '') }}</textarea>
-
-            <label for="rastrear_pedido">Rastrear seu Pedido (Texto/Link):</label>
-            <textarea id="rastrear_pedido" name="rastrear_pedido">{{ config.get('rastrear_pedido', '') }}</textarea>
-
-            <h3 style="color: #00bcd4;">Imagens de Pagamento e Selos (Rodapé)</h3>
-            <p>Liste os caminhos dos arquivos das bandeiras de pagamento e selos, separando-os por vírgula.</p>
-            <label for="banner_pagamento">Caminhos dos Banners (Separe por vírgula):</label>
-            <input type="text" id="banner_pagamento" name="banner_pagamento" value="{{ config.get('banner_pagamento', '') }}">
-
-
-            <button type="submit">Salvar Todas as Configurações</button>
-        </form>
-    </div>
-</body>
-</html>
+        <button type="submit" style="width: 100%; background: #28a745; color: white; padding: 15px; border: none; border-radius: 5px; font-weight: bold; font-size: 16px; margin-top: 30px; cursor: pointer; transition: 0.3s;">
+            <i class="fas fa-save"></i> SALVAR TODAS AS CONFIGURAÇÕES
+        </button>
+    </form>
+</div>
+{% endblock %}
