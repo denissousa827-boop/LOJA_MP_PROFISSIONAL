@@ -1,20 +1,24 @@
+import os
 import requests
-import database
 
 def calcular_frete(cep_destino, preco_produto):
-    # Busca as configurações direto do banco de dados para ser dinâmico
-    configs = database.get_configuracoes()
+    """
+    Calcula o frete usando a API do Melhor Envio.
+    Busca o Token e o CEP de origem das variáveis de ambiente da Vercel.
+    """
+    # Busca as configurações das variáveis de ambiente da Vercel
+    token = os.getenv('MELHOR_ENVIO_TOKEN')
     
-    token = configs.get('melhor_envio_token')
-    cep_origem = configs.get('cep_origem', '04866220')
+    # Se você não configurar o CEP_ORIGEM na Vercel, ele usará o seu padrão abaixo
+    cep_origem = os.getenv('CEP_ORIGEM', '04866220')
 
     if not token:
-        print("Erro: Token do Melhor Envio não configurado no painel.")
+        print("Erro: Token do Melhor Envio não encontrado nas variáveis da Vercel.")
         return []
 
     url = "https://www.melhorenvio.com.br/api/v2/me/shipment/calculate"
     
-    # Limpeza de dados
+    # Limpeza de dados (garante que sejam apenas números)
     cep_destino = "".join(filter(str.isdigit, str(cep_destino)))
     cep_origem = "".join(filter(str.isdigit, str(cep_origem)))
 
@@ -44,6 +48,7 @@ def calcular_frete(cep_destino, preco_produto):
 
     try:
         response = requests.post(url, json=payload, headers=headers)
+        
         if response.status_code == 200:
             opcoes = response.json()
             validas = []
@@ -60,8 +65,9 @@ def calcular_frete(cep_destino, preco_produto):
                     })
             return validas
         else:
-            print(f"Erro API Melhor Envio: {response.status_code}")
+            print(f"Erro API Melhor Envio: {response.status_code} - {response.text}")
             return []
+            
     except Exception as e:
         print(f"Erro de Conexão Frete: {e}")
         return []

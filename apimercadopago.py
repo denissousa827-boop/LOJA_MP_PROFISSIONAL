@@ -1,18 +1,20 @@
+import os
 import mercadopago
 
-# Seu Token de Produção
-ACCESS_TOKEN = "APP_USR-2222429353877099-112620-ccc34bc216b9dad3e14ec4618dbc5de3-1565971221"
+# Busca o Token de Produção das variáveis de ambiente da Vercel (Segurança)
+ACCESS_TOKEN = os.getenv("ACCESS_TOKEN")
 
 def gerar_link_pagamento(produto, id_venda, valor_total):
     """
-    Gera o link do Mercado Pago configurado com o túnel do Serveo.
-    Agora recebe 'valor_total' que já inclui o frete calculado no checkout.
+    Gera o link do Mercado Pago configurado para a produção na Vercel.
+    O valor_total já inclui o frete calculado.
     """
     try:
+        # Inicializa o SDK com o token da Vercel
         sdk = mercadopago.SDK(ACCESS_TOKEN)
 
-        # SEU LINK DO SERVEO
-        LINK_EXTERNO = "https://2899e90966eaaa2ce0f188b95ef0da2e.serveousercontent.com"
+        # O link oficial da sua loja na Vercel (Substituiu o Serveo)
+        LINK_EXTERNO = "https://loja-mp-profissional.vercel.app"
 
         preference_data = {
             "items": [
