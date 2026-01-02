@@ -215,3 +215,22 @@ def setup_admin():
             cur.execute("INSERT INTO users (username, password_hash) VALUES (%s, %s) ON CONFLICT DO NOTHING", 
                         ("utbdenis6752", generate_password_hash("675201")))
     return "Admin criado com sucesso! Agora tente logar."
+def get_produtos_em_oferta():
+    """Busca apenas produtos que estão marcados como em oferta"""
+    conn = create_connection()
+    if not conn: return []
+    try:
+        with conn.cursor(cursor_factory=RealDictCursor) as cur:
+            cur.execute("SELECT * FROM produtos WHERE em_oferta = TRUE ORDER BY criado_em DESC")
+            return cur.fetchall()
+    finally: conn.close()
+
+def get_produtos_normais():
+    """Busca produtos que NÃO estão em oferta"""
+    conn = create_connection()
+    if not conn: return []
+    try:
+        with conn.cursor(cursor_factory=RealDictCursor) as cur:
+            cur.execute("SELECT * FROM produtos WHERE em_oferta = FALSE ORDER BY criado_em DESC")
+            return cur.fetchall()
+    finally: conn.close()
