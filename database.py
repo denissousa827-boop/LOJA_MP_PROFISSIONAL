@@ -1,36 +1,3 @@
-import os
-import datetime
-import psycopg2
-import uuid
-from psycopg2.extras import RealDictCursor
-from werkzeug.security import generate_password_hash, check_password_hash
-from supabase import create_client
-from werkzeug.utils import secure_filename
-
-# ==================================================
-# CONFIGURAÇÃO AMBIENTE
-# ==================================================
-DATABASE_URL = os.getenv("DATABASE_URL")
-SUPABASE_URL = os.getenv("SUPABASE_URL")
-# Ajustado para ler a chave que você configurou na Vercel
-SUPABASE_KEY = os.getenv("SUPABASE_KEY") or os.getenv("SUPABASE_SERVICE_ROLE_KEY")
-
-if DATABASE_URL and DATABASE_URL.startswith("postgres://"):
-    DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
-
-supabase_storage = None
-if SUPABASE_URL and SUPABASE_KEY:
-    supabase_storage = create_client(SUPABASE_URL, SUPABASE_KEY)
-
-BUCKET_NAME = "produtos"
-
-def create_connection():
-    try:
-        return psycopg2.connect(DATABASE_URL, sslmode="require", connect_timeout=10)
-    except Exception as e:
-        print(f"[DB ERROR] {e}")
-        return None
-
 # ==================================================
 # CONSULTAS (Essenciais para o main.py)
 # ==================================================
@@ -42,6 +9,36 @@ def get_produtos():
             cur.execute("SELECT * FROM produtos ORDER BY criado_em DESC")
             return cur.fetchall()
     finally: conn.close()
+
+def get_produtos_em_oferta():
+    conn = create_connection()
+    if not conn: return []
+    try:
+        with conn.cursor(cursor_factory=RealDictCursor) as cur:
+            cur.execute("SELECT * FROM produtos WHERE em_oferta = TRUE ORDER BY criado_em DESC")
+            return cur.fetchall()
+    finally: conn.close()
+
+def get_vendas():
+    conn = create_connection()
+    if not conn: return []
+    try:
+        with conn.cursor(cursor_factory=RealDictCursor) as cur:
+            cur.execute("SELECT * FROM vendas ORDER BY data DESC")
+            return cur.fetchall()
+    finally: conn.close()
+
+def is_valid_login(user, password):
+    conn = create_connection()
+    if not conn: return None
+    try:
+        with conn.cursor(cursor_factory=RealDictCursor) as cur:
+            cur.execute("SELECT * FROM users WHERE username=%s", (user,))
+            u = cur.fetchone()
+            if u and check_password_hash(u["password_hash"], password):
+                return u
+    finally: conn.close()
+    return None
 
 def get_configuracoes():
     conn = create_connection()
@@ -59,81 +56,4 @@ def get_produto_por_id(id_prod):
         with conn.cursor(cursor_factory=RealDictCursor) as cur:
             cur.execute("SELECT * FROM produtos WHERE id = %s", (id_prod,))
             return cur.fetchone()
-    finally: conn.close()
-
-# ==================================================
-# UPLOAD E MANUTENÇÃO
-# ==================================================
-def upload_imagem_supabase(file):
-    if not file or not file.filename or not supabase_storage:
-        return None
-    try:
-        filename = secure_filename(file.filename)
-        ext = filename.rsplit(".", 1)[1].lower()
-        unique_name = f"{uuid.uuid4()}.{ext}"
-        file.seek(0)
-        content = file.read()
-        supabase_storage.storage.from_(BUCKET_NAME).upload(
-            path=unique_name, file=content, file_options={"content-type": file.content_type}
-        )
-        return supabase_storage.storage.from_(BUCKET_NAME).get_public_url(unique_name)
-    except Exception as e:
-        print(f"[STORAGE ERROR] {e}")
-        return None
-
-def add_or_update_produto(dados):
-    conn = create_connection()
-    if not conn: return
-    try:
-        with conn:
-            with conn.cursor() as cur:
-                cur.execute("""
-                INSERT INTO produtos (
-                    id, nome, preco, descricao, img_path_1, img_path_2, 
-                    em_oferta, novo_preco, estoque, desconto_pix, frete_gratis_valor, prazo_entrega, tempo_preparo
-                ) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
-                ON CONFLICT (id) DO UPDATE SET
-                    nome=EXCLUDED.nome, preco=EXCLUDED.preco, descricao=EXCLUDED.descricao,
-                    img_path_1=COALESCE(EXCLUDED.img_path_1, produtos.img_path_1),
-                    img_path_2=COALESCE(EXCLUDED.img_path_2, produtos.img_path_2),
-                    em_oferta=EXCLUDED.em_oferta, novo_preco=EXCLUDED.novo_preco, 
-                    estoque=EXCLUDED.estoque, desconto_pix=EXCLUDED.desconto_pix,
-                    frete_gratis_valor=EXCLUDED.frete_gratis_valor, prazo_entrega=EXCLUDED.prazo_entrega,
-                    tempo_preparo=EXCLUDED.tempo_preparo
-                """, (
-                    dados['id'], dados['nome'], dados['preco'], dados['descricao'],
-                    dados.get('img_path_1'), dados.get('img_path_2'), dados['em_oferta'],
-                    dados['novo_preco'], dados['estoque'], dados.get('desconto_pix', 0),
-                    dados.get('frete_gratis_valor', 0), dados.get('prazo_entrega'), dados.get('tempo_preparo')
-                ))
-    finally: conn.close()
-
-def save_configuracoes(configs: dict):
-    conn = create_connection()
-    if not conn: return False
-    try:
-        with conn:
-            with conn.cursor() as cur:
-                for chave, valor in configs.items():
-                    cur.execute("""
-                    INSERT INTO configuracoes (chave, valor) VALUES (%s, %s)
-                    ON CONFLICT (chave) DO UPDATE SET valor = EXCLUDED.valor
-                    """, (chave, str(valor)))
-        return True
-    except: return False
-    finally: conn.close()
-
-def init_db():
-    conn = create_connection()
-    if not conn: return
-    try:
-        with conn:
-            with conn.cursor() as cur:
-                cur.execute("CREATE TABLE IF NOT EXISTS users (id SERIAL PRIMARY KEY, username TEXT UNIQUE, password_hash TEXT);")
-                # ... resto do seu SQL de criação já enviado anteriormente ...
-                cur.execute("""
-                INSERT INTO users (username, password_hash)
-                VALUES (%s, %s) ON CONFLICT (username) DO NOTHING
-                """, ("utbdenis6752", generate_password_hash("675201")))
-        print("✅ Tabelas e Admin configurados")
     finally: conn.close()
