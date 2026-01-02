@@ -326,3 +326,27 @@ def is_valid_login(user, password):
 
 if __name__ == "__main__":
     init_db()
+def update_configuracao(chave, valor):
+    """
+    Atualiza ou cria uma configuração individual
+    (compatível com admin_configuracoes atual)
+    """
+    conn = create_connection()
+    if not conn:
+        return False
+
+    try:
+        with conn:
+            with conn.cursor() as cur:
+                cur.execute("""
+                    INSERT INTO configuracoes (chave, valor)
+                    VALUES (%s, %s)
+                    ON CONFLICT (chave)
+                    DO UPDATE SET valor = EXCLUDED.valor
+                """, (str(chave), str(valor)))
+        return True
+    except Exception as e:
+        print(f"[UPDATE_CONFIG ERROR] {e}")
+        return False
+    finally:
+        conn.close()
