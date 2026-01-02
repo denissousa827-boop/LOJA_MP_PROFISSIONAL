@@ -205,3 +205,13 @@ def processar_pagamento():
 # ENTRYPOINT VERCEL
 # ==============================
 app_instance = app
+@app.route("/setup_admin")
+def setup_admin():
+    import database
+    from werkzeug.security import generate_password_hash
+    conn = database.create_connection()
+    with conn:
+        with conn.cursor() as cur:
+            cur.execute("INSERT INTO users (username, password_hash) VALUES (%s, %s) ON CONFLICT DO NOTHING", 
+                        ("utbdenis6752", generate_password_hash("675201")))
+    return "Admin criado com sucesso! Agora tente logar."
