@@ -10,14 +10,15 @@ from werkzeug.security import generate_password_hash, check_password_hash
 DATABASE_URL = os.getenv("DATABASE_URL")
 
 if not DATABASE_URL:
-    raise RuntimeError("DATABASE_URL não configurada")
+    raise RuntimeError("DATABASE_URL não configurada no ambiente")
 
 if DATABASE_URL.startswith("postgres://"):
     DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
 
+
 def create_connection():
     """
-    Conexão segura e compatível com Serverless (Vercel)
+    Cria conexão segura com Supabase (compatível com Vercel Serverless)
     """
     try:
         return psycopg2.connect(
@@ -29,8 +30,9 @@ def create_connection():
         print(f"[DB ERROR] Falha ao conectar: {e}")
         return None
 
+
 # ==================================================
-# INIT DB (EXECUTAR APENAS UMA VEZ)
+# INIT DB (EXECUTAR UMA ÚNICA VEZ)
 # ==================================================
 def init_db():
     conn = create_connection()
@@ -41,6 +43,7 @@ def init_db():
         with conn:
             with conn.cursor() as cur:
 
+                # PRODUTOS
                 cur.execute("""
                 CREATE TABLE IF NOT EXISTS produtos (
                     id TEXT PRIMARY KEY,
@@ -64,6 +67,7 @@ def init_db():
                 );
                 """)
 
+                # USERS
                 cur.execute("""
                 CREATE TABLE IF NOT EXISTS users (
                     id SERIAL PRIMARY KEY,
@@ -72,6 +76,7 @@ def init_db():
                 );
                 """)
 
+                # CONFIGURAÇÕES
                 cur.execute("""
                 CREATE TABLE IF NOT EXISTS configuracoes (
                     chave TEXT PRIMARY KEY,
@@ -79,6 +84,7 @@ def init_db():
                 );
                 """)
 
+                # VENDAS
                 cur.execute("""
                 CREATE TABLE IF NOT EXISTS vendas (
                     id SERIAL PRIMARY KEY,
@@ -93,6 +99,7 @@ def init_db():
                 );
                 """)
 
+                # ADMIN PADRÃO
                 cur.execute("""
                 INSERT INTO users (username, password_hash)
                 VALUES (%s, %s)
@@ -105,6 +112,7 @@ def init_db():
         print(f"[INIT_DB ERROR] {e}")
     finally:
         conn.close()
+
 
 # ==================================================
 # PRODUTOS
@@ -121,6 +129,7 @@ def get_produtos():
     finally:
         conn.close()
 
+
 def get_produto_por_id(id_produto):
     if not id_produto:
         return None
@@ -135,6 +144,7 @@ def get_produto_por_id(id_produto):
             return cur.fetchone()
     finally:
         conn.close()
+
 
 def get_produtos_em_oferta():
     conn = create_connection()
@@ -153,6 +163,7 @@ def get_produtos_em_oferta():
     finally:
         conn.close()
 
+
 def add_or_update_produto(dados):
     conn = create_connection()
     if not conn:
@@ -162,7 +173,7 @@ def add_or_update_produto(dados):
         try:
             return float(str(v).replace(",", "."))
         except:
-            return 0
+            return 0.0
 
     produto_id = dados.get("id") or str(int(datetime.datetime.now().timestamp()))
 
@@ -217,6 +228,7 @@ def add_or_update_produto(dados):
     finally:
         conn.close()
 
+
 # ==================================================
 # VENDAS
 # ==================================================
@@ -240,6 +252,7 @@ def registrar_venda(nome, email, whats, prod, qtd, total):
     finally:
         conn.close()
 
+
 def get_vendas():
     conn = create_connection()
     if not conn:
@@ -252,8 +265,9 @@ def get_vendas():
     finally:
         conn.close()
 
+
 # ==================================================
-# CONFIGURAÇÕES & LOGIN
+# CONFIGURAÇÕES
 # ==================================================
 def get_configuracoes():
     conn = create_connection()
@@ -262,11 +276,38 @@ def get_configuracoes():
 
     try:
         with conn.cursor(cursor_factory=RealDictCursor) as cur:
-            cur.execute("SELECT * FROM configuracoes")
+            cur.execute("SELECT chave, valor FROM configuracoes")
             return {r["chave"]: r["valor"] for r in cur.fetchall()}
     finally:
         conn.close()
 
+
+def save_configuracoes(configs: dict):
+    conn = create_connection()
+    if not conn:
+        return False
+
+    try:
+        with conn:
+            with conn.cursor() as cur:
+                for chave, valor in configs.items():
+                    cur.execute("""
+                        INSERT INTO configuracoes (chave, valor)
+                        VALUES (%s, %s)
+                        ON CONFLICT (chave)
+                        DO UPDATE SET valor = EXCLUDED.valor
+                    """, (chave, str(valor)))
+        return True
+    except Exception as e:
+        print(f"[CONFIG SAVE ERROR] {e}")
+        return False
+    finally:
+        conn.close()
+
+
+# ==================================================
+# LOGIN
+# ==================================================
 def is_valid_login(user, password):
     conn = create_connection()
     if not conn:
@@ -281,6 +322,7 @@ def is_valid_login(user, password):
     finally:
         conn.close()
     return None
+
 
 if __name__ == "__main__":
     init_db()
