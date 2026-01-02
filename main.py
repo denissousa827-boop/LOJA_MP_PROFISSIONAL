@@ -12,8 +12,12 @@ import database
 app = Flask(__name__)
 app.secret_key = 'chave_ultra_secreta_denis'
 
+# ==============================
+# CONFIGURAÇÕES GERAIS
+# ==============================
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'mp4'}
 
+# Inicializa o banco de dados e cria tabelas na primeira execução
 with app.app_context():
     database.init_db()
 
@@ -32,8 +36,7 @@ def load_shop_config():
 @app.route("/")
 def homepage():
     produtos = database.get_produtos()
-    # Esta linha abaixo causava o erro se a função não estivesse no database.py
-    ofertas = database.get_produtos_em_oferta() 
+    ofertas = database.get_produtos_em_oferta()
     config, banner = load_shop_config()
     return render_template("homepage.html", produtos=produtos, ofertas=ofertas, config=config, banner_pagamento=banner)
 
@@ -48,7 +51,7 @@ def produto_detalhes(id_produto):
     return render_template("produto_detalhes.html", produto=produto, imagens=imagens, config=config, banner_pagamento=banner)
 
 # ==============================
-# LOGIN E DASHBOARD
+# ADMINISTRAÇÃO
 # ==============================
 @app.route("/admin/login", methods=["GET", "POST"])
 def admin_login():
@@ -75,9 +78,6 @@ def admin_dashboard():
     config, _ = load_shop_config()
     return render_template("admin_dashboard.html", vendas=vendas, produtos=produtos, config=config)
 
-# ==============================
-# CONFIGURAÇÕES E CRUD
-# ==============================
 @app.route("/admin/configuracoes", methods=["POST"])
 def admin_configuracoes():
     if not session.get("admin_logged_in"):
@@ -93,7 +93,6 @@ def admin_configuracoes():
 def admin_edit(id_produto=None):
     if not session.get("admin_logged_in"):
         return redirect(url_for("admin_login"))
-
     if request.method == "POST":
         try:
             def parse_float(val): return float(str(val).replace(",", ".")) if val else 0.0
@@ -111,29 +110,37 @@ def admin_edit(id_produto=None):
                 "tempo_preparo": request.form.get("tempo_preparo"),
             }
             for i in range(1, 5):
-                file = request.files.get(f"imagem_{i}")
-                if file and file.filename != '' and allowed_file(file.filename):
-                    url = database.upload_imagem_supabase(file)
+                f = request.files.get(f"imagem_{i}")
+                if f and f.filename != '' and allowed_file(f.filename):
+                    url = database.upload_imagem_supabase(f)
                     if url: dados[f"img_path_{i}"] = url
-
             database.add_or_update_produto(dados)
             flash("Produto salvo!", "success")
             return redirect(url_for("admin_dashboard"))
         except Exception as e:
             flash(f"Erro: {e}", "danger")
-
     produto = database.get_produto_por_id(id_produto) if id_produto else None
     config, _ = load_shop_config()
     return render_template("admin_editar.html", produto=produto, config=config)
 
+# ==============================
+# PAGAMENTO E SETUP
+# ==============================
+@app.route("/processar_pagamento", methods=["POST"])
+def processar_pagamento():
+    id_prod = request.form.get("id_produto")
+    produto = database.get_produto_por_id(id_prod)
+    if not produto: return redirect(url_for("homepage"))
+    preco = float(produto["novo_preco"] if produto.get("em_oferta") else produto["preco"])
+    frete = float(request.form.get("frete_valor") or 0)
+    total = preco + frete
+    venda_id = database.registrar_venda(request.form.get("nome"), request.form.get("email"), request.form.get("whatsapp"), produto["nome"], 1, total)
+    link = gerar_link_pagamento(produto, venda_id, total)
+    return redirect(link) if link else redirect(url_for("produto_detalhes", id_produto=id_prod))
+
 @app.route("/setup_admin")
 def setup_admin():
-    from werkzeug.security import generate_password_hash
-    conn = database.create_connection()
-    with conn:
-        with conn.cursor() as cur:
-            cur.execute("INSERT INTO users (username, password_hash) VALUES (%s, %s) ON CONFLICT (username) DO NOTHING", 
-                        ("utbdenis6752", generate_password_hash("675201")))
-    return "Admin configurado! Tente logar."
+    database.init_db()
+    return "Comando de criação de tabelas e admin executado! Tente logar no painel agora."
 
 app_instance = app
