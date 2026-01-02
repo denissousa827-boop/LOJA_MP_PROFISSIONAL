@@ -15,3 +15,5 @@ psycopg2-binary==2.9.9
 requests==2.32.5
 urllib3==2.6.0
 Werkzeug==3.1.4
+supabase
+postgrest
