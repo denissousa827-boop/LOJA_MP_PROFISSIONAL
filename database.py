@@ -6,28 +6,31 @@ from psycopg2.extras import RealDictCursor
 from werkzeug.security import generate_password_hash, check_password_hash
 from supabase import create_client
 
-# Configurações do ambiente
+# --- CONFIGURAÇÕES DO AMBIENTE (Lidas da Vercel) ---
 DATABASE_URL = os.getenv("DATABASE_URL")
 SUPABASE_URL = os.getenv("SUPABASE_URL")
 SUPABASE_KEY = os.getenv("SUPABASE_KEY")
 
+# Corrige o prefixo da URL para o Python reconhecer o banco de dados
 if DATABASE_URL and DATABASE_URL.startswith("postgres://"):
     DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
 
-# Cliente Supabase para Storage
+# Inicializa o cliente para salvar fotos no Storage do Supabase
 supabase_storage = None
 if SUPABASE_URL and SUPABASE_KEY:
     supabase_storage = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 def create_connection():
+    """Cria a conexão com o banco de dados do Supabase"""
     try:
         return psycopg2.connect(DATABASE_URL, sslmode='require')
     except Exception as e:
         print(f"Erro de conexão: {e}")
         return None
 
-# --- FUNÇÃO DE UPLOAD ---
+# --- FUNÇÃO DE UPLOAD DE IMAGENS ---
 def upload_imagem_supabase(file):
+    """Envia a foto para o bucket 'produtos' no Supabase"""
     if not supabase_storage or not file: return None
     try:
         ext = file.filename.rsplit('.', 1)[1].lower()
@@ -41,19 +44,26 @@ def upload_imagem_supabase(file):
         print(f"Erro upload: {e}")
         return None
 
-# --- INICIALIZAÇÃO ---
+# --- INICIALIZAÇÃO E CORREÇÃO DE SENHA ---
 def init_db():
+    """Cria o usuário admin com a senha correta se ele não existir"""
     conn = create_connection()
     if not conn: return
     try:
         with conn:
             with conn.cursor() as cur:
-                senha_hash = generate_password_hash("675201", method='pbkdf2:sha256')
-                cur.execute("INSERT INTO users (username, password_hash) VALUES (%s, %s) ON CONFLICT (username) DO NOTHING", ("utbdenis6752", senha_hash))
+                # Geramos a senha 675201 de forma segura
+                senha_hash = generate_password_hash("675201")
+                # Se o usuário não existir, ele cria. Se já existir, ele não mexe.
+                cur.execute("""
+                    INSERT INTO users (username, password_hash) 
+                    VALUES (%s, %s) 
+                    ON CONFLICT (username) DO NOTHING
+                """, ("utbdenis6752", senha_hash))
     finally:
         conn.close()
 
-# --- FUNÇÕES QUE O MAIN.PY PRECISA ---
+# --- FUNÇÕES DE CONSULTA (PRODUTOS) ---
 
 def get_produtos():
     conn = create_connection()
@@ -71,7 +81,6 @@ def get_produtos_em_oferta():
     try:
         agora = datetime.datetime.now().strftime("%Y-%m-%dT%H:%M")
         with conn.cursor(cursor_factory=RealDictCursor) as cur:
-            # Seleciona produtos onde em_oferta é 1 e a data final é maior que agora
             cur.execute("SELECT * FROM produtos WHERE em_oferta = 1 AND (oferta_fim IS NULL OR oferta_fim > %s) ORDER BY id DESC", (agora,))
             return cur.fetchall()
     finally:
@@ -87,6 +96,8 @@ def get_produto_por_id(id_produto):
     finally:
         conn.close()
 
+# --- CONFIGURAÇÕES DA LOJA ---
+
 def get_configuracoes():
     conn = create_connection()
     if not conn: return {}
@@ -97,18 +108,24 @@ def get_configuracoes():
     finally:
         conn.close()
 
+# --- VALIDAÇÃO DE LOGIN (ONDE ESTAVA O ERRO) ---
+
 def is_valid_login(user, password):
+    """Verifica se o usuário e senha batem com o banco"""
     conn = create_connection()
     if not conn: return None
     try:
         with conn.cursor(cursor_factory=RealDictCursor) as cur:
             cur.execute("SELECT * FROM users WHERE username = %s", (user,))
             u = cur.fetchone()
+            # check_password_hash compara a senha digitada com a protegida no banco
             if u and check_password_hash(u['password_hash'], password):
                 return u
     finally:
         conn.close()
     return None
+
+# --- REGISTRO DE VENDAS ---
 
 def registrar_venda(nome_cliente, email_cliente, whatsapp_cliente, produto_nome, quantidade, valor_total):
     conn = create_connection()
@@ -133,6 +150,8 @@ def get_vendas():
             return cur.fetchall()
     finally:
         conn.close()
+
+# --- ADICIONAR OU ATUALIZAR PRODUTO ---
 
 def add_or_update_produto(dados):
     conn = create_connection()
