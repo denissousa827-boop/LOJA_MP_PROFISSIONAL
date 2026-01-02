@@ -4,32 +4,39 @@ import datetime
 import os
 from werkzeug.security import generate_password_hash, check_password_hash
 
-# Configuração da URL do Banco de Dados (Supabase)
+# 1. AJUSTE DE CONEXÃO: Suporte a Pooler (Porta 6543)
 DATABASE_URL = os.getenv("DATABASE_URL")
 if DATABASE_URL and DATABASE_URL.startswith("postgres://"):
     DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
 
 def create_connection():
-    """Cria a conexão segura com o PostgreSQL do Supabase"""
+    """Cria a conexão com SSL e Timeout aumentado para evitar quedas na Vercel"""
     if not DATABASE_URL:
-        print("ERRO: DATABASE_URL não configurada.")
+        print("ERRO: DATABASE_URL não configurada na Vercel.")
         return None
     try:
-        # sslmode='require' é obrigatório para Vercel -> Supabase
-        conn = psycopg2.connect(DATABASE_URL, sslmode='require', connect_timeout=5)
+        # Aumentamos o connect_timeout para 10 e forçamos o SSL
+        conn = psycopg2.connect(
+            DATABASE_URL, 
+            sslmode='require', 
+            connect_timeout=10,
+            keepalives=1,
+            keepalives_idle=30,
+            keepalives_interval=10,
+            keepalives_count=5
+        )
         return conn
     except Exception as e:
-        print(f"Erro de conexão: {e}")
+        print(f"Erro de conexão no Supabase: {e}")
         return None
 
 def init_db():
-    """Inicializa as tabelas no Supabase e garante o admin"""
+    """Inicializa as tabelas e garante o admin"""
     conn = create_connection()
     if not conn: return
     try:
         with conn:
             with conn.cursor() as cursor:
-                # Tabela de Produtos
                 cursor.execute("""
                     CREATE TABLE IF NOT EXISTS produtos (
                         id TEXT PRIMARY KEY,
@@ -48,12 +55,8 @@ def init_db():
                         tempo_preparo TEXT DEFAULT '1 a 2 dias'
                     )
                 """)
-
-                # Tabelas de Usuários e Configurações
                 cursor.execute("CREATE TABLE IF NOT EXISTS users (id SERIAL PRIMARY KEY, username TEXT UNIQUE, password_hash TEXT)")
                 cursor.execute("CREATE TABLE IF NOT EXISTS configuracoes (chave TEXT PRIMARY KEY, valor TEXT)")
-
-                # Tabela de Vendas
                 cursor.execute("""
                     CREATE TABLE IF NOT EXISTS vendas (
                         id SERIAL PRIMARY KEY,
@@ -67,14 +70,15 @@ def init_db():
                         status TEXT DEFAULT 'pendente'
                     )
                 """)
-
-                # Criar Admin Padrão
+                
                 admin_user = "utbdenis6752"
                 admin_pass = "675201"
-                cursor.execute("SELECT * FROM users WHERE username=%s", (admin_user,))
-                if not cursor.fetchone():
-                    cursor.execute("INSERT INTO users (username, password_hash) VALUES (%s, %s)",
-                                   (admin_user, generate_password_hash(admin_pass)))
+                # Usamos ON CONFLICT para garantir que o admin sempre tenha a senha correta
+                cursor.execute("""
+                    INSERT INTO users (username, password_hash) 
+                    VALUES (%s, %s) 
+                    ON CONFLICT (username) DO UPDATE SET password_hash = EXCLUDED.password_hash
+                """, (admin_user, generate_password_hash(admin_pass)))
         print("✅ Tabelas sincronizadas com Supabase!")
     except Exception as e:
         print(f"Erro no init_db: {e}")
@@ -91,7 +95,7 @@ def get_produtos():
             cur.execute("SELECT * FROM produtos ORDER BY id DESC")
             return [dict(r) for r in cur.fetchall()]
     finally:
-        conn.close()
+        if conn: conn.close()
 
 def get_produto_por_id(id_produto):
     if not id_produto: return None
@@ -103,7 +107,7 @@ def get_produto_por_id(id_produto):
             res = cur.fetchone()
             return dict(res) if res else None
     finally:
-        conn.close()
+        if conn: conn.close()
 
 def get_produtos_em_oferta():
     conn = create_connection()
@@ -114,7 +118,7 @@ def get_produtos_em_oferta():
             cur.execute("SELECT * FROM produtos WHERE em_oferta = 1 AND (oferta_fim IS NULL OR oferta_fim > %s) ORDER BY id DESC", (agora,))
             return [dict(r) for r in cur.fetchall()]
     finally:
-        conn.close()
+        if conn: conn.close()
 
 def add_or_update_produto(dados):
     conn = create_connection()
@@ -122,7 +126,6 @@ def add_or_update_produto(dados):
     try:
         id_prod = dados.get('id') or str(int(datetime.datetime.now().timestamp()))[-8:]
         def to_f(v): return float(str(v).replace(',', '.')) if v else 0.0
-
         with conn:
             with conn.cursor() as cursor:
                 sql = """
@@ -133,7 +136,11 @@ def add_or_update_produto(dados):
                     ON CONFLICT (id) DO UPDATE SET
                     nome=EXCLUDED.nome, preco=EXCLUDED.preco, descricao=EXCLUDED.descricao,
                     em_oferta=EXCLUDED.em_oferta, novo_preco=EXCLUDED.novo_preco, estoque=EXCLUDED.estoque,
-                    frete_gratis_valor=EXCLUDED.frete_gratis_valor, prazo_entrega=EXCLUDED.prazo_entrega
+                    frete_gratis_valor=EXCLUDED.frete_gratis_valor, prazo_entrega=EXCLUDED.prazo_entrega,
+                    img_path_1=COALESCE(EXCLUDED.img_path_1, produtos.img_path_1),
+                    img_path_2=COALESCE(EXCLUDED.img_path_2, produtos.img_path_2),
+                    img_path_3=COALESCE(EXCLUDED.img_path_3, produtos.img_path_3),
+                    img_path_4=COALESCE(EXCLUDED.img_path_4, produtos.img_path_4)
                 """
                 cursor.execute(sql, (
                     id_prod, dados.get('nome'), to_f(dados.get('preco')), dados.get('descricao'),
@@ -143,7 +150,7 @@ def add_or_update_produto(dados):
                     to_f(dados.get('frete_gratis_valor')), dados.get('prazo_entrega'), dados.get('tempo_preparo')
                 ))
     finally:
-        conn.close()
+        if conn: conn.close()
 
 # --- VENDAS E CONFIGS ---
 
@@ -159,7 +166,7 @@ def registrar_venda(nome, email, whats, prod, qtd, total):
                             (data, nome, email, whats, prod, qtd, total))
                 return cur.fetchone()[0]
     finally:
-        conn.close()
+        if conn: conn.close()
 
 def get_vendas():
     conn = create_connection()
@@ -169,7 +176,7 @@ def get_vendas():
             cur.execute("SELECT * FROM vendas ORDER BY id DESC")
             return [dict(r) for r in cur.fetchall()]
     finally:
-        conn.close()
+        if conn: conn.close()
 
 def get_configuracoes():
     conn = create_connection()
@@ -179,7 +186,22 @@ def get_configuracoes():
             cur.execute("SELECT chave, valor FROM configuracoes")
             return {row['chave']: row['valor'] for row in cur.fetchall()}
     finally:
-        conn.close()
+        if conn: conn.close()
+
+# 2. ADICIONADA FUNÇÃO DE UPDATE (IMPORTANTE PARA O PAINEL FUNCIONAR)
+def update_configuracao(chave, valor):
+    conn = create_connection()
+    if not conn: return
+    try:
+        with conn:
+            with conn.cursor() as cur:
+                cur.execute("""
+                    INSERT INTO configuracoes (chave, valor) 
+                    VALUES (%s, %s) 
+                    ON CONFLICT (chave) DO UPDATE SET valor = EXCLUDED.valor
+                """, (chave, str(valor)))
+    finally:
+        if conn: conn.close()
 
 def is_valid_login(user, password):
     conn = create_connection()
@@ -191,7 +213,7 @@ def is_valid_login(user, password):
             if u and check_password_hash(u['password_hash'], password):
                 return dict(u)
     finally:
-        conn.close()
+        if conn: conn.close()
     return None
 
 if __name__ == '__main__':
