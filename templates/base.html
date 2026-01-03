@@ -3,43 +3,57 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}{{ config.get('titulo_site', 'Minha Loja') }}{% endblock %}</title>
+    <title>{% block title %}{{ config.get('titulo_site', 'Loja Profissional') }}{% endblock %}</title>
     
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
-    
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
+
     <style>
         :root {
-            /* Cores vindas do painel admin com fallback seguro */
-            --header-bg: {{ config.get('header_color', '#181818') }};
-            --footer-bg: {{ config.get('footer_color', '#181818') }};
-            --primary-color: #d10024;
+            --header-bg: {{ config.get('header_color', '#1a1a1a') }};
+            --footer-bg: {{ config.get('footer_color', '#111111') }};
+            --primary-color: #ff4757;
+            --secondary-color: #2f3542;
+            --accent-color: #2ed573;
+            --text-light: #ffffff;
+            --text-dark: #2f3542;
+            --glass: rgba(255, 255, 255, 0.1);
         }
 
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
         body {
-            margin: 0;
-            padding: 0;
             font-family: 'Poppins', sans-serif;
-            background-color: #f8f9fa;
-            color: #333;
-            line-height: 1.6;
+            background-color: #f1f2f6;
+            color: var(--text-dark);
+            overflow-x: hidden;
+        }
+
+        /* Barra de Anúncio Superior */
+        .top-bar {
+            background: linear-gradient(90deg, var(--primary-color), #ff6b81);
+            color: white;
+            text-align: center;
+            padding: 8px 0;
+            font-size: 13px;
+            font-weight: 500;
+            letter-spacing: 0.5px;
+        }
+
+        header {
+            background-color: var(--header-bg);
+            padding: 15px 0;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
         }
 
         .container {
             max-width: 1200px;
             margin: 0 auto;
-            padding: 0 15px;
-        }
-
-        /* Cabeçalho */
-        header {
-            background-color: var(--header-bg);
-            padding: 15px 0;
-            color: white;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.3);
-            position: sticky;
-            top: 0;
-            z-index: 1000;
+            padding: 0 20px;
         }
 
         .header-content {
@@ -48,44 +62,58 @@
             align-items: center;
         }
 
+        /* Logo Estilizada */
         .logo img {
-            max-height: 50px;
-            width: auto;
-            display: block;
+            max-height: 55px;
+            transition: transform 0.3s ease;
         }
+        .logo:hover img { transform: scale(1.05); }
 
         .logo-text {
-            font-size: 22px;
-            font-weight: 700;
-            text-decoration: none;
+            font-size: 24px;
+            font-weight: 800;
             color: white;
-            text-transform: uppercase;
-            letter-spacing: 1px;
+            letter-spacing: -1px;
+            text-decoration: none;
         }
 
-        nav {
-            display: flex;
-            align-items: center;
-        }
+        /* Navegação */
+        nav { display: flex; gap: 25px; align-items: center; }
 
         nav a {
-            color: white;
+            color: rgba(255,255,255,0.8);
             text-decoration: none;
-            margin-left: 20px;
             font-weight: 500;
-            transition: color 0.3s;
+            font-size: 15px;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
         }
 
-        nav a:hover {
-            color: var(--primary-color);
+        nav a:hover { color: white; transform: translateY(-2px); }
+
+        .btn-suporte {
+            background: var(--accent-color);
+            padding: 8px 18px;
+            border-radius: 50px;
+            color: white !important;
+            box-shadow: 0 4px 15px rgba(46, 213, 115, 0.3);
         }
 
-        /* Rodapé */
+        .btn-admin {
+            border: 1px solid #ffc107;
+            padding: 8px 18px;
+            border-radius: 8px;
+            color: #ffc107 !important;
+        }
+
+        /* Rodapé Profissional */
         footer {
             background-color: var(--footer-bg);
             color: white;
-            padding: 50px 0 20px;
-            margin-top: 60px;
+            padding: 70px 0 30px;
+            margin-top: 80px;
         }
 
         .footer-grid {
@@ -95,60 +123,104 @@
         }
 
         .footer-section h4 {
-            color: white;
-            border-bottom: 2px solid var(--primary-color);
-            padding-bottom: 10px;
-            margin-bottom: 20px;
             font-size: 18px;
+            margin-bottom: 25px;
+            position: relative;
+            padding-bottom: 10px;
+        }
+
+        .footer-section h4::after {
+            content: '';
+            position: absolute;
+            left: 0;
+            bottom: 0;
+            width: 40px;
+            height: 3px;
+            background: var(--primary-color);
         }
 
         .footer-section p {
             font-size: 14px;
-            opacity: 0.8;
+            line-height: 1.8;
+            color: #a1a1a1;
         }
 
-        .payment-icons {
-            font-size: 28px;
-            gap: 15px;
+        .social-icons {
             display: flex;
-            margin-top: 15px;
+            gap: 15px;
+            margin-top: 20px;
         }
 
-        /* Responsividade */
+        .social-icons a {
+            width: 35px;
+            height: 35px;
+            background: var(--glass);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            color: white;
+            text-decoration: none;
+            transition: 0.3s;
+        }
+
+        .social-icons a:hover { background: var(--primary-color); }
+
+        .payment-methods {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .payment-card {
+            background: white;
+            padding: 5px 10px;
+            border-radius: 4px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+        }
+
+        /* Mobile */
         @media (max-width: 768px) {
-            .header-content { flex-direction: column; text-align: center; gap: 15px; }
-            nav { justify-content: center; }
-            nav a { margin: 0 10px; font-size: 14px; }
+            .header-content { flex-direction: column; gap: 20px; }
+            nav { gap: 15px; }
+            .btn-suporte { padding: 8px 12px; }
         }
     </style>
 </head>
 <body>
 
+    <div class="top-bar">
+        <i class="fas fa-truck"></i> FRETE GRÁTIS PARA TODO O BRASIL EM COMPRAS ACIMA DE R$ 199
+    </div>
+
     <header>
         <div class="container header-content">
-            <a href="/" class="logo" style="text-decoration: none;">
+            <a href="/" class="logo">
                 {% if config.get('logo_img') %}
                     <img src="{{ config.get('logo_img') }}" alt="Logo">
                 {% else %}
-                    <span class="logo-text">{{ config.get('titulo_site', 'LOJA ONLINE') }}</span>
+                    <span class="logo-text">{{ config.get('titulo_site', 'MY STORE') }}</span>
                 {% endif %}
             </a>
             
             <nav>
-                <a href="/"><i class="fas fa-home"></i> Início</a>
-                <a href="https://api.whatsapp.com/send?phone={{ config.get('contato_whatsapp') }}" target="_blank">
-                    <i class="fab fa-whatsapp"></i> Suporte
+                <a href="/"><i class="fas fa-th-large"></i> Loja</a>
+                <a href="https://api.whatsapp.com/send?phone={{ config.get('contato_whatsapp') }}" target="_blank" class="btn-suporte">
+                    <i class="fab fa-whatsapp"></i> WhatsApp
                 </a>
                 {% if session.get('admin_logged_in') %}
-                    <a href="{{ url_for('admin_dashboard') }}" style="color: #ffc107; font-weight: bold;">
-                        <i class="fas fa-user-shield"></i> Painel
+                    <a href="{{ url_for('admin_dashboard') }}" class="btn-admin">
+                        <i class="fas fa-lock"></i> Admin
                     </a>
                 {% endif %}
             </nav>
         </div>
     </header>
 
-    <main>
+    <main class="animate__animated animate__fadeIn">
         {% block content %}{% endblock %}
     </main>
 
@@ -156,26 +228,33 @@
         <div class="container">
             <div class="footer-grid">
                 <div class="footer-section">
-                    <h4>Sobre Nós</h4>
-                    <p>{{ config.get('titulo_site', 'Nossa Loja') }} - Levando os melhores produtos até você com segurança e rapidez.</p>
+                    <h4>{{ config.get('titulo_site', 'Sua Loja') }}</h4>
+                    <p>Qualidade premium e atendimento especializado. Sua satisfação é nossa prioridade número um.</p>
+                    <div class="social-icons">
+                        <a href="#"><i class="fab fa-instagram"></i></a>
+                        <a href="#"><i class="fab fa-facebook-f"></i></a>
+                    </div>
                 </div>
+                
                 <div class="footer-section">
-                    <h4>Atendimento</h4>
-                    <p><i class="fas fa-envelope"></i> {{ config.get('contato_email', 'contato@email.com') }}</p>
-                    <p><i class="fab fa-whatsapp"></i> {{ config.get('contato_whatsapp', 'WhatsApp') }}</p>
+                    <h4>Links Úteis</h4>
+                    <p><a href="/" style="color: #a1a1a1; text-decoration: none;">Início</a></p>
+                    <p><a href="#" style="color: #a1a1a1; text-decoration: none;">Rastrear Pedido</a></p>
+                    <p><a href="#" style="color: #a1a1a1; text-decoration: none;">Termos de Uso</a></p>
                 </div>
+
                 <div class="footer-section">
-                    <h4>Pagamento Seguro</h4>
-                    <p>Pagamentos processados via Mercado Pago.</p>
-                    <div class="payment-icons">
-                        <i class="fab fa-cc-visa"></i>
-                        <i class="fab fa-cc-mastercard"></i>
-                        <i class="fas fa-credit-card"></i>
-                        <i class="fas fa-money-bill-wave"></i> </div>
+                    <h4>Segurança</h4>
+                    <p><i class="fas fa-shield-alt" style="color: var(--accent-color);"></i> Ambiente 100% Seguro</p>
+                    <p>Seus dados são criptografados e protegidos.</p>
+                    <div class="payment-methods">
+                        <img src="https://logodeposito.com/wp-content/uploads/2020/03/mercado-pago-logo.png" style="height: 25px; filter: brightness(0) invert(1);" alt="Mercado Pago">
+                    </div>
                 </div>
             </div>
-            <div style="text-align: center; margin-top: 40px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 20px; font-size: 12px; opacity: 0.6;">
-                &copy; 2026 {{ config.get('titulo_site') }} - Todos os direitos reservados.
+            
+            <div style="text-align: center; margin-top: 50px; padding-top: 20px; border-top: 1px solid var(--glass); font-size: 13px; color: #666;">
+                &copy; 2026 {{ config.get('titulo_site') }} | Logado como: {{ session.get('user_email', 'Visitante') }}
             </div>
         </div>
     </footer>
