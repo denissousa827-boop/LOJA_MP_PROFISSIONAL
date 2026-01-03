@@ -12,10 +12,12 @@ app = Flask(__name__)
 # Tenta ler a chave da Vercel, se não existir usa a padrão
 app.secret_key = os.getenv("SECRET_KEY", "chave_ultra_secreta_denis")
 
-# Inicializa o banco de dados e as tabelas no Supabase (Executa apenas uma vez)
+# Inicializa o banco de dados (Apenas se houver tabelas para criar)
 with app.app_context():
     try:
-        database.init_db()
+        # Nota: Se estiver usando Supabase Auth puro, o init_db pode ser vazio ou apenas para tabelas de produtos/vendas
+        if hasattr(database, 'init_db'):
+            database.init_db()
     except Exception as e:
         print(f"Erro ao iniciar banco: {e}")
 
@@ -35,7 +37,8 @@ def load_shop_config():
 @app.route("/")
 def homepage():
     produtos = database.get_produtos()
-    ofertas = database.get_produtos_em_oferta()
+    # Pega ofertas (certifique-se que essa função existe no seu database.py)
+    ofertas = getattr(database, 'get_produtos_em_oferta', lambda: [])()
     config, banner_pagamento = load_shop_config()
     return render_template("homepage.html", produtos=produtos, ofertas=ofertas, config=config, banner_pagamento=banner_pagamento)
 
@@ -56,21 +59,28 @@ def checkout(id_produto):
     config, _ = load_shop_config()
     return render_template("checkout.html", produto=produto, config=config)
 
-# --- SISTEMA DE LOGIN ---
+# --- NOVO SISTEMA DE LOGIN (SUPABASE AUTH INTEGRADO) ---
 @app.route("/admin/login", methods=['GET', 'POST'])
 def admin_login():
     if request.method == 'POST':
-        user = request.form.get('username')
+        # Agora pegamos o email em vez de apenas username
+        email = request.form.get('username') # Pode manter o nome do campo como 'username' no HTML se preferir
         pw = request.form.get('password')
-        if database.is_valid_login(user, pw):
+        
+        # database.is_valid_login agora valida contra o Supabase Auth (JSON que você enviou)
+        user_data = database.is_valid_login(email, pw)
+        
+        if user_data:
             session['admin_logged_in'] = True
+            session['user_email'] = user_data.get('email')
             return redirect(url_for('admin_dashboard'))
-        flash("Usuário ou senha inválidos.")
+        
+        flash("E-mail ou senha inválidos no sistema Supabase.")
     return render_template("admin_login.html")
 
 @app.route("/admin/logout")
 def admin_logout():
-    session.pop('admin_logged_in', None)
+    session.clear()
     return redirect(url_for('admin_login'))
 
 # --- PAINEL E CONFIGURAÇÕES ---
@@ -100,7 +110,7 @@ def admin_configuracoes():
             if url_logo:
                 configs_para_salvar['logo_img'] = url_logo
 
-        # Salvamento otimizado com fechamento garantido de conexão
+        # Salvamento direto nas configurações
         conn = database.create_connection()
         if conn:
             try:
@@ -113,9 +123,9 @@ def admin_configuracoes():
                             DO UPDATE SET valor = EXCLUDED.valor
                         """, (k, v))
                 conn.commit()
-                flash("Configurações atualizadas com sucesso!")
+                flash("Configurações atualizadas!")
             except Exception as e:
-                flash(f"Erro ao salvar configurações: {e}")
+                flash(f"Erro ao salvar: {e}")
             finally:
                 conn.close()
         
@@ -161,7 +171,7 @@ def admin_edit(id_produto=None):
                 dados['video_path'] = url_video
 
         database.add_or_update_produto(dados)
-        flash("Produto salvo com sucesso!")
+        flash("Produto salvo!")
         return redirect(url_for('admin_dashboard'))
 
     produto = database.get_produto_por_id(id_produto) if id_produto else None
@@ -211,7 +221,7 @@ def processar_pagamento():
     except Exception as e:
         return f"Erro ao processar: {e}", 500
 
-# Necessário para a Vercel identificar o app (Não remova)
+# Necessário para a Vercel identificar o app
 app = app
 
 if __name__ == "__main__":
