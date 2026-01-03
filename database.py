@@ -1,160 +1,57 @@
 import os
-import psycopg2
 import datetime
 import uuid
+import psycopg2
 from psycopg2.extras import RealDictCursor
-from werkzeug.security import generate_password_hash, check_password_hash
-from supabase import create_client
+from supabase import create_client, Client
 
-# --- CONFIGURAÇÕES DO AMBIENTE (Lidas da Vercel) ---
+# --- CONFIGURAÇÕES DO AMBIENTE ---
+# Estas devem estar configuradas na Vercel
 DATABASE_URL = os.getenv("DATABASE_URL")
 SUPABASE_URL = os.getenv("SUPABASE_URL")
-SUPABASE_KEY = os.getenv("SUPABASE_KEY")
+# Use a SERVICE_ROLE_KEY para o backend ter permissão de admin
+SUPABASE_KEY = os.getenv("SUPABASE_SERVICE_ROLE_KEY") or os.getenv("SUPABASE_KEY")
 
-# Corrige o prefixo da URL para o Python reconhecer o banco de dados
-if DATABASE_URL and DATABASE_URL.startswith("postgres://"):
-    DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
-
-# Inicializa o cliente para salvar fotos no Storage do Supabase
-supabase_storage = None
-if SUPABASE_URL and SUPABASE_KEY:
-    try:
-        supabase_storage = create_client(SUPABASE_URL, SUPABASE_KEY)
-    except Exception as e:
-        print(f"Erro ao inicializar storage: {e}")
+# Inicializa o Cliente Supabase para Auth e Storage
+supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 def create_connection():
-    """Cria a conexão com o banco de dados do Supabase"""
+    """Conecta ao Postgres para dados da loja (vendas/produtos)"""
     if not DATABASE_URL:
-        print("DATABASE_URL não configurada!")
         return None
     try:
-        # Usamos sslmode='require' para segurança obrigatória no Supabase
-        return psycopg2.connect(DATABASE_URL, sslmode='require')
+        # Corrige a URL para o psycopg2
+        url = DATABASE_URL.replace("postgres://", "postgresql://", 1)
+        return psycopg2.connect(url, sslmode='require')
     except Exception as e:
-        print(f"Erro de conexão: {e}")
+        print(f"Erro de conexão DB: {e}")
         return None
 
-# --- FUNÇÃO DE UPLOAD DE IMAGENS ---
-def upload_imagem_supabase(file):
-    """Envia a foto para o bucket 'produtos' no Supabase"""
-    if not supabase_storage or not file: return None
+# --- VALIDAÇÃO DE LOGIN (SUPABASE AUTH) ---
+
+def is_valid_login(email, password):
+    """
+    Tenta logar o usuário usando o e-mail e senha no Supabase Auth.
+    Isso valida o usuário denissousa827@gmail.com que você criou.
+    """
     try:
-        ext = file.filename.rsplit('.', 1)[1].lower()
-        filename = f"{uuid.uuid4()}.{ext}"
-        file.seek(0)
-        content = file.read()
-        bucket = "produtos"
-        supabase_storage.storage.from_(bucket).upload(filename, content, {"content-type": file.content_type})
-        return supabase_storage.storage.from_(bucket).get_public_url(filename)
+        # Tenta a autenticação oficial
+        auth_response = supabase.auth.sign_in_with_password({
+            "email": email,
+            "password": password
+        })
+        
+        if auth_response.user:
+            # Retorna um dicionário simulando o objeto de usuário para o restante do seu código
+            return {
+                "id": auth_response.user.id,
+                "email": auth_response.user.email
+            }
     except Exception as e:
-        print(f"Erro upload: {e}")
-        return None
-
-# --- INICIALIZAÇÃO E CORREÇÃO DE SENHA ---
-def init_db():
-    """Cria o usuário admin com a senha correta se ele não existir"""
-    conn = create_connection()
-    if not conn: return
-    try:
-        with conn:
-            with conn.cursor() as cur:
-                # Criamos o hash seguro para a senha 675201
-                senha_hash = generate_password_hash("675201")
-                # Garante que o usuário exista com a senha moderna
-                cur.execute("""
-                    INSERT INTO users (username, password_hash) 
-                    VALUES (%s, %s) 
-                    ON CONFLICT (username) DO NOTHING
-                """, ("utbdenis6752", senha_hash))
-            conn.commit()
-    except Exception as e:
-        print(f"Erro no init_db: {e}")
-    finally:
-        conn.close()
-
-# --- FUNÇÕES DE CONSULTA (PRODUTOS) ---
-
-def get_produtos():
-    conn = create_connection()
-    if not conn: return []
-    try:
-        with conn.cursor(cursor_factory=RealDictCursor) as cur:
-            cur.execute("SELECT * FROM produtos ORDER BY id DESC")
-            return cur.fetchall()
-    finally:
-        conn.close()
-
-def get_produtos_em_oferta():
-    conn = create_connection()
-    if not conn: return []
-    try:
-        agora = datetime.datetime.now().strftime("%Y-%m-%dT%H:%M")
-        with conn.cursor(cursor_factory=RealDictCursor) as cur:
-            cur.execute("SELECT * FROM produtos WHERE em_oferta = 1 AND (oferta_fim IS NULL OR oferta_fim > %s) ORDER BY id DESC", (agora,))
-            return cur.fetchall()
-    finally:
-        conn.close()
-
-def get_produto_por_id(id_produto):
-    conn = create_connection()
-    if not conn: return None
-    try:
-        with conn.cursor(cursor_factory=RealDictCursor) as cur:
-            cur.execute("SELECT * FROM produtos WHERE id = %s", (str(id_produto),))
-            return cur.fetchone()
-    finally:
-        conn.close()
-
-# --- CONFIGURAÇÕES DA LOJA ---
-
-def get_configuracoes():
-    conn = create_connection()
-    if not conn: return {}
-    try:
-        with conn.cursor(cursor_factory=RealDictCursor) as cur:
-            cur.execute("SELECT chave, valor FROM configuracoes")
-            return {r['chave']: r['valor'] for r in cur.fetchall()}
-    finally:
-        conn.close()
-
-# --- VALIDAÇÃO DE LOGIN ---
-
-def is_valid_login(user, password):
-    """Verifica se o usuário e senha batem com o banco"""
-    conn = create_connection()
-    if not conn: return None
-    try:
-        with conn.cursor(cursor_factory=RealDictCursor) as cur:
-            cur.execute("SELECT * FROM users WHERE username = %s", (user,))
-            u = cur.fetchone()
-            # check_password_hash compara a senha digitada com a protegida no banco
-            if u and check_password_hash(u['password_hash'], password):
-                return u
-    except Exception as e:
-        print(f"Erro no login: {e}")
-    finally:
-        if conn:
-            conn.close()
+        print(f"Erro na autenticação Supabase: {e}")
     return None
 
-# --- REGISTRO DE VENDAS ---
-
-def registrar_venda(nome_cliente, email_cliente, whatsapp_cliente, produto_nome, quantidade, valor_total):
-    conn = create_connection()
-    if not conn: return 0
-    try:
-        with conn:
-            with conn.cursor() as cur:
-                data = datetime.datetime.now().strftime("%d/%m/%Y %H:%M")
-                cur.execute("""INSERT INTO vendas (data, nome_cliente, email_cliente, whatsapp_cliente, produto_nome, quantidade, valor_total)
-                               VALUES (%s, %s, %s, %s, %s, %s, %s) RETURNING id""",
-                            (data, nome_cliente, email_cliente, whatsapp_cliente, produto_nome, quantidade, valor_total))
-                res = cur.fetchone()
-                conn.commit()
-                return res[0] if res else 0
-    finally:
-        conn.close()
+# --- FUNÇÕES DE VENDAS ---
 
 def get_vendas():
     conn = create_connection()
@@ -166,7 +63,33 @@ def get_vendas():
     finally:
         conn.close()
 
-# --- ADICIONAR OU ATUALIZAR PRODUTO ---
+def registrar_venda(nome_cliente, email_cliente, whatsapp_cliente, produto_nome, quantidade, valor_total):
+    conn = create_connection()
+    if not conn: return 0
+    try:
+        with conn:
+            with conn.cursor() as cur:
+                data = datetime.datetime.now().strftime("%d/%m/%Y %H:%M")
+                cur.execute("""
+                    INSERT INTO vendas (data, nome_cliente, email_cliente, whatsapp_cliente, produto_nome, quantidade, valor_total)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s) RETURNING id
+                """, (data, nome_cliente, email_cliente, whatsapp_cliente, produto_nome, quantidade, valor_total))
+                res = cur.fetchone()
+                return res[0] if res else 0
+    finally:
+        conn.close()
+
+# --- FUNÇÕES DE PRODUTOS ---
+
+def get_produtos():
+    conn = create_connection()
+    if not conn: return []
+    try:
+        with conn.cursor(cursor_factory=RealDictCursor) as cur:
+            cur.execute("SELECT * FROM produtos ORDER BY id DESC")
+            return cur.fetchall()
+    finally:
+        conn.close()
 
 def add_or_update_produto(dados):
     conn = create_connection()
@@ -178,27 +101,15 @@ def add_or_update_produto(dados):
         with conn:
             with conn.cursor() as cursor:
                 sql = """
-                    INSERT INTO produtos (id, nome, preco, descricao, img_path_1, img_path_2, img_path_3, img_path_4,
-                                        video_path, em_oferta, novo_preco, oferta_fim, desconto_pix, estoque,
-                                        frete_gratis_valor, prazo_entrega, tempo_preparo)
-                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                    INSERT INTO produtos (id, nome, preco, descricao, em_oferta, novo_preco, estoque)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s)
                     ON CONFLICT (id) DO UPDATE SET
                     nome=EXCLUDED.nome, preco=EXCLUDED.preco, descricao=EXCLUDED.descricao,
-                    img_path_1=COALESCE(EXCLUDED.img_path_1, produtos.img_path_1),
-                    img_path_2=COALESCE(EXCLUDED.img_path_2, produtos.img_path_2),
-                    img_path_3=COALESCE(EXCLUDED.img_path_3, produtos.img_path_3),
-                    img_path_4=COALESCE(EXCLUDED.img_path_4, produtos.img_path_4),
-                    video_path=COALESCE(EXCLUDED.video_path, produtos.video_path),
-                    em_oferta=EXCLUDED.em_oferta, novo_preco=EXCLUDED.novo_preco, estoque=EXCLUDED.estoque,
-                    frete_gratis_valor=EXCLUDED.frete_gratis_valor, prazo_entrega=EXCLUDED.prazo_entrega
+                    em_oferta=EXCLUDED.em_oferta, novo_preco=EXCLUDED.novo_preco, estoque=EXCLUDED.estoque
                 """
                 cursor.execute(sql, (
                     id_prod, dados.get('nome'), to_f(dados.get('preco')), dados.get('descricao'),
-                    dados.get('img_path_1'), dados.get('img_path_2'), dados.get('img_path_3'), dados.get('img_path_4'),
-                    dados.get('video_path'), 1 if dados.get('em_oferta') else 0, to_f(dados.get('novo_preco')),
-                    dados.get('oferta_fim'), int(dados.get('desconto_pix', 0)), int(dados.get('estoque', 0)),
-                    to_f(dados.get('frete_gratis_valor')), dados.get('prazo_entrega'), dados.get('tempo_preparo')
+                    1 if dados.get('em_oferta') else 0, to_f(dados.get('novo_preco')), int(dados.get('estoque', 0))
                 ))
-            conn.commit()
     finally:
         conn.close()
