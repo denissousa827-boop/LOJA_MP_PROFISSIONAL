@@ -2,16 +2,19 @@ from flask import Flask, render_template, request, redirect, url_for, session, f
 from werkzeug.utils import secure_filename
 import os
 
-# Importação dos seus módulos (certifique-se que os arquivos existem no GitHub)
+# Importação dos seus módulos
 from apimercadopago import gerar_link_pagamento
 import melhorenvio
 import database
 
 app = Flask(__name__)
-app.secret_key = 'chave_ultra_secreta_denis'
 
-# Inicializa o banco de dados e as tabelas no Supabase
-database.init_db()
+# Tenta ler a chave da Vercel, se não existir usa a padrão
+app.secret_key = os.getenv("SECRET_KEY", "chave_ultra_secreta_denis")
+
+# Inicializa o banco de dados e as tabelas no Supabase (Executa apenas uma vez)
+with app.app_context():
+    database.init_db()
 
 # --- FUNÇÕES AUXILIARES ---
 def allowed_file(filename):
@@ -84,7 +87,6 @@ def admin_configuracoes():
         return redirect(url_for('admin_login'))
 
     if request.method == 'POST':
-        # Salva textos
         configs_para_salvar = {}
         campos = ['titulo_site', 'contato_whatsapp', 'contato_email', 'header_color', 'footer_color', 'mercado_pago_token', 'melhor_envio_token', 'cep_origem']
         for campo in campos:
@@ -97,16 +99,23 @@ def admin_configuracoes():
             if url_logo:
                 configs_para_salvar['logo_img'] = url_logo
 
-        # Aqui você precisará criar uma função save_config no seu database.py que itere o dict
-        for k, v in configs_para_salvar.items():
-            # Simulando a gravação individual para manter compatibilidade com seu database.py
-            conn = database.create_connection()
-            with conn:
-                with conn.cursor() as cur:
-                    cur.execute("INSERT INTO configuracoes (chave, valor) VALUES (%s, %s) ON CONFLICT (chave) DO UPDATE SET valor = EXCLUDED.valor", (k, v))
-            conn.close()
-
-        flash("Configurações atualizadas!")
+        # Salvando de forma otimizada no banco do Supabase
+        conn = database.create_connection()
+        if conn:
+            try:
+                with conn:
+                    with conn.cursor() as cur:
+                        for k, v in configs_para_salvar.items():
+                            cur.execute("""
+                                INSERT INTO configuracoes (chave, valor) 
+                                VALUES (%s, %s) 
+                                ON CONFLICT (chave) 
+                                DO UPDATE SET valor = EXCLUDED.valor
+                            """, (k, v))
+                flash("Configurações atualizadas com sucesso!")
+            finally:
+                conn.close()
+        
         return redirect(url_for('admin_dashboard'))
 
     config, _ = load_shop_config()
@@ -161,33 +170,48 @@ def admin_edit(id_produto=None):
 # --- APIs E PROCESSAMENTO ---
 @app.route("/calcular_frete", methods=['POST'])
 def calcular_frete():
-    dados = request.json
-    cep_dest = dados.get('cep')
-    prod_id = dados.get('produto_id')
-    produto = database.get_produto_por_id(prod_id)
-    preco_base = float(produto['novo_preco'] if produto.get('em_oferta') else produto['preco'])
-    opcoes = melhorenvio.calcular_frete(cep_dest, preco_base)
-    return jsonify(opcoes)
+    try:
+        dados = request.json
+        cep_dest = dados.get('cep')
+        prod_id = dados.get('produto_id')
+        produto = database.get_produto_por_id(prod_id)
+        if not produto:
+            return jsonify({"erro": "Produto não encontrado"}), 404
+            
+        preco_base = float(str(produto['novo_preco'] if produto.get('em_oferta') else produto['preco']).replace(',', '.'))
+        opcoes = melhorenvio.calcular_frete(cep_dest, preco_base)
+        return jsonify(opcoes)
+    except Exception as e:
+        return jsonify({"erro": str(e)}), 500
 
 @app.route("/processar_pagamento", methods=['POST'])
 def processar_pagamento():
     id_prod = request.form.get('id_produto')
     produto = database.get_produto_por_id(id_prod)
-    frete = float(request.form.get('frete_valor') or 0)
-    preco = float(produto['novo_preco'] if produto.get('em_oferta') else produto['preco'])
-    total = preco + frete
+    if not produto:
+        return "Produto não encontrado", 404
 
-    id_venda = database.registrar_venda(
-        nome_cliente=request.form.get('nome'),
-        email_cliente=request.form.get('email'),
-        whatsapp_cliente=request.form.get('whatsapp'),
-        produto_nome=produto['nome'],
-        quantidade=1,
-        valor_total=total
-    )
+    try:
+        frete = float(str(request.form.get('frete_valor') or 0).replace(',', '.'))
+        preco = float(str(produto['novo_preco'] if produto.get('em_oferta') else produto['preco']).replace(',', '.'))
+        total = preco + frete
 
-    link = gerar_link_pagamento(produto, id_venda, total)
-    return redirect(link) if link else "Erro no link de pagamento"
+        id_venda = database.registrar_venda(
+            nome_cliente=request.form.get('nome'),
+            email_cliente=request.form.get('email'),
+            whatsapp_cliente=request.form.get('whatsapp'),
+            produto_nome=produto['nome'],
+            quantidade=1,
+            valor_total=total
+        )
+
+        link = gerar_link_pagamento(produto, id_venda, total)
+        return redirect(link) if link else "Erro no link de pagamento"
+    except Exception as e:
+        return f"Erro ao processar: {e}", 500
+
+# Necessário para a Vercel identificar o app
+app = app
 
 if __name__ == "__main__":
     app.run(host='0.0.0.0', port=5000, debug=True)
