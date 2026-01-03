@@ -5,11 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}{{ config.get('titulo_site', 'Minha Loja') }}{% endblock %}</title>
     
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
     
     <style>
         :root {
+            /* Cores vindas do painel admin com fallback seguro */
             --header-bg: {{ config.get('header_color', '#181818') }};
             --footer-bg: {{ config.get('footer_color', '#181818') }};
             --primary-color: #d10024;
@@ -19,8 +20,9 @@
             margin: 0;
             padding: 0;
             font-family: 'Poppins', sans-serif;
-            background-color: #f5f5f5;
+            background-color: #f8f9fa;
             color: #333;
+            line-height: 1.6;
         }
 
         .container {
@@ -29,12 +31,15 @@
             padding: 0 15px;
         }
 
-        /* Cabeçalho Dinâmico */
+        /* Cabeçalho */
         header {
             background-color: var(--header-bg);
             padding: 15px 0;
             color: white;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
         }
 
         .header-content {
@@ -45,14 +50,22 @@
 
         .logo img {
             max-height: 50px;
+            width: auto;
             display: block;
         }
 
         .logo-text {
-            font-size: 24px;
-            font-weight: bold;
+            font-size: 22px;
+            font-weight: 700;
             text-decoration: none;
             color: white;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        nav {
+            display: flex;
+            align-items: center;
         }
 
         nav a {
@@ -60,33 +73,52 @@
             text-decoration: none;
             margin-left: 20px;
             font-weight: 500;
+            transition: color 0.3s;
+        }
+
+        nav a:hover {
+            color: var(--primary-color);
         }
 
         /* Rodapé */
         footer {
             background-color: var(--footer-bg);
             color: white;
-            padding: 40px 0;
-            margin-top: 50px;
+            padding: 50px 0 20px;
+            margin-top: 60px;
         }
 
         .footer-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 30px;
+            gap: 40px;
         }
 
         .footer-section h4 {
+            color: white;
             border-bottom: 2px solid var(--primary-color);
             padding-bottom: 10px;
             margin-bottom: 20px;
+            font-size: 18px;
         }
 
-        /* Ajustes para Mobile */
-        @media (max-width: 600px) {
-            .header-content { flex-direction: column; gap: 10px; }
-            nav { margin-top: 10px; }
-            nav a { margin: 0 10px; }
+        .footer-section p {
+            font-size: 14px;
+            opacity: 0.8;
+        }
+
+        .payment-icons {
+            font-size: 28px;
+            gap: 15px;
+            display: flex;
+            margin-top: 15px;
+        }
+
+        /* Responsividade */
+        @media (max-width: 768px) {
+            .header-content { flex-direction: column; text-align: center; gap: 15px; }
+            nav { justify-content: center; }
+            nav a { margin: 0 10px; font-size: 14px; }
         }
     </style>
 </head>
@@ -94,9 +126,9 @@
 
     <header>
         <div class="container header-content">
-            <a href="/" class="logo">
+            <a href="/" class="logo" style="text-decoration: none;">
                 {% if config.get('logo_img') %}
-                    <img src="{{ config.get('logo_img') }}" alt="Logo {{ config.get('titulo_site') }}">
+                    <img src="{{ config.get('logo_img') }}" alt="Logo">
                 {% else %}
                     <span class="logo-text">{{ config.get('titulo_site', 'LOJA ONLINE') }}</span>
                 {% endif %}
@@ -104,11 +136,13 @@
             
             <nav>
                 <a href="/"><i class="fas fa-home"></i> Início</a>
-                <a href="https://wa.me/{{ config.get('contato_whatsapp') }}" target="_blank">
+                <a href="https://api.whatsapp.com/send?phone={{ config.get('contato_whatsapp') }}" target="_blank">
                     <i class="fab fa-whatsapp"></i> Suporte
                 </a>
                 {% if session.get('admin_logged_in') %}
-                    <a href="{{ url_for('admin_dashboard') }}" style="color: #ffc107;"><i class="fas fa-user-shield"></i> Painel</a>
+                    <a href="{{ url_for('admin_dashboard') }}" style="color: #ffc107; font-weight: bold;">
+                        <i class="fas fa-user-shield"></i> Painel
+                    </a>
                 {% endif %}
             </nav>
         </div>
@@ -119,29 +153,30 @@
     </main>
 
     <footer>
-        <div class="container footer-grid">
-            <div class="footer-section">
-                <h4>Sobre Nós</h4>
-                <p>{{ config.get('titulo_site', 'Nossa Loja') }} - Os melhores produtos com entrega rápida e segura.</p>
-            </div>
-            <div class="footer-section">
-                <h4>Contato</h4>
-                <p><i class="fas fa-envelope"></i> {{ config.get('contato_email', 'contato@email.com') }}</p>
-                <p><i class="fab fa-whatsapp"></i> {{ config.get('contato_whatsapp', 'WhatsApp') }}</p>
-            </div>
-            <div class="footer-section">
-                <h4>Pagamento Seguro</h4>
-                <p>Processado por Mercado Pago</p>
-                <div style="font-size: 24px; gap: 10px; display: flex;">
-                    <i class="fab fa-cc-visa"></i>
-                    <i class="fab fa-cc-mastercard"></i>
-                    <i class="fas fa-barcode"></i>
-                    <i class="fas fa-pix"></i>
+        <div class="container">
+            <div class="footer-grid">
+                <div class="footer-section">
+                    <h4>Sobre Nós</h4>
+                    <p>{{ config.get('titulo_site', 'Nossa Loja') }} - Levando os melhores produtos até você com segurança e rapidez.</p>
+                </div>
+                <div class="footer-section">
+                    <h4>Atendimento</h4>
+                    <p><i class="fas fa-envelope"></i> {{ config.get('contato_email', 'contato@email.com') }}</p>
+                    <p><i class="fab fa-whatsapp"></i> {{ config.get('contato_whatsapp', 'WhatsApp') }}</p>
+                </div>
+                <div class="footer-section">
+                    <h4>Pagamento Seguro</h4>
+                    <p>Pagamentos processados via Mercado Pago.</p>
+                    <div class="payment-icons">
+                        <i class="fab fa-cc-visa"></i>
+                        <i class="fab fa-cc-mastercard"></i>
+                        <i class="fas fa-credit-card"></i>
+                        <i class="fas fa-money-bill-wave"></i> </div>
                 </div>
             </div>
-        </div>
-        <div style="text-align: center; margin-top: 30px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 20px;">
-            &copy; 2024 {{ config.get('titulo_site') }} - Todos os direitos reservados.
+            <div style="text-align: center; margin-top: 40px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 20px; font-size: 12px; opacity: 0.6;">
+                &copy; 2026 {{ config.get('titulo_site') }} - Todos os direitos reservados.
+            </div>
         </div>
     </footer>
 
