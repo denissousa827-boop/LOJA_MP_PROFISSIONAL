@@ -18,11 +18,18 @@ if DATABASE_URL and DATABASE_URL.startswith("postgres://"):
 # Inicializa o cliente para salvar fotos no Storage do Supabase
 supabase_storage = None
 if SUPABASE_URL and SUPABASE_KEY:
-    supabase_storage = create_client(SUPABASE_URL, SUPABASE_KEY)
+    try:
+        supabase_storage = create_client(SUPABASE_URL, SUPABASE_KEY)
+    except Exception as e:
+        print(f"Erro ao inicializar storage: {e}")
 
 def create_connection():
     """Cria a conexão com o banco de dados do Supabase"""
+    if not DATABASE_URL:
+        print("DATABASE_URL não configurada!")
+        return None
     try:
+        # Usamos sslmode='require' para segurança obrigatória no Supabase
         return psycopg2.connect(DATABASE_URL, sslmode='require')
     except Exception as e:
         print(f"Erro de conexão: {e}")
@@ -52,14 +59,17 @@ def init_db():
     try:
         with conn:
             with conn.cursor() as cur:
-                # Geramos a senha 675201 de forma segura
+                # Criamos o hash seguro para a senha 675201
                 senha_hash = generate_password_hash("675201")
-                # Se o usuário não existir, ele cria. Se já existir, ele não mexe.
+                # Garante que o usuário exista com a senha moderna
                 cur.execute("""
                     INSERT INTO users (username, password_hash) 
                     VALUES (%s, %s) 
                     ON CONFLICT (username) DO NOTHING
                 """, ("utbdenis6752", senha_hash))
+            conn.commit()
+    except Exception as e:
+        print(f"Erro no init_db: {e}")
     finally:
         conn.close()
 
@@ -108,7 +118,7 @@ def get_configuracoes():
     finally:
         conn.close()
 
-# --- VALIDAÇÃO DE LOGIN (ONDE ESTAVA O ERRO) ---
+# --- VALIDAÇÃO DE LOGIN ---
 
 def is_valid_login(user, password):
     """Verifica se o usuário e senha batem com o banco"""
@@ -121,8 +131,11 @@ def is_valid_login(user, password):
             # check_password_hash compara a senha digitada com a protegida no banco
             if u and check_password_hash(u['password_hash'], password):
                 return u
+    except Exception as e:
+        print(f"Erro no login: {e}")
     finally:
-        conn.close()
+        if conn:
+            conn.close()
     return None
 
 # --- REGISTRO DE VENDAS ---
@@ -137,7 +150,9 @@ def registrar_venda(nome_cliente, email_cliente, whatsapp_cliente, produto_nome,
                 cur.execute("""INSERT INTO vendas (data, nome_cliente, email_cliente, whatsapp_cliente, produto_nome, quantidade, valor_total)
                                VALUES (%s, %s, %s, %s, %s, %s, %s) RETURNING id""",
                             (data, nome_cliente, email_cliente, whatsapp_cliente, produto_nome, quantidade, valor_total))
-                return cur.fetchone()[0]
+                res = cur.fetchone()
+                conn.commit()
+                return res[0] if res else 0
     finally:
         conn.close()
 
@@ -184,5 +199,6 @@ def add_or_update_produto(dados):
                     dados.get('oferta_fim'), int(dados.get('desconto_pix', 0)), int(dados.get('estoque', 0)),
                     to_f(dados.get('frete_gratis_valor')), dados.get('prazo_entrega'), dados.get('tempo_preparo')
                 ))
+            conn.commit()
     finally:
         conn.close()
