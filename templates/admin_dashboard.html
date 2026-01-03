@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Painel Administrativo Pro | {{ config.get('titulo_site', 'Loja') }}{% endblock %}
+{% block title %}Painel Administrativo | {{ config.get('titulo_site', 'Loja') }}{% endblock %}
 
 {% block content %}
 <div class="container" style="margin-top: 30px; margin-bottom: 50px; max-width: 1200px; padding: 0 15px;">
@@ -11,8 +11,8 @@
             <p style="margin: 5px 0 0; color: #666;">Olá, Administrador. Controle tudo por aqui.</p>
         </div>
         <div style="display: flex; gap: 12px;">
-            <a href="{{ url_for('homepage') }}" style="text-decoration: none; padding: 12px 20px; border: 1px solid #ddd; border-radius: 8px; color: #555; font-weight: 600;">
-                <i class="fas fa-eye"></i> Ver Loja
+            <a href="{{ url_for('admin_configuracoes') }}" style="text-decoration: none; padding: 12px 20px; background: #f1f2f6; border-radius: 8px; color: #2f3542; font-weight: 600;">
+                <i class="fas fa-tools"></i> Ajustes da Loja
             </a>
             <a href="{{ url_for('admin_logout') }}" style="text-decoration: none; padding: 12px 20px; background: #ff4757; color: white; border-radius: 8px; font-weight: 600;">
                 <i class="fas fa-sign-out-alt"></i> Sair
@@ -30,29 +30,25 @@
             <h2 style="font-size: 32px; margin: 10px 0;">{{ produtos|length }}</h2>
         </div>
         <div style="background: #1e90ff; color: white; padding: 25px; border-radius: 12px;">
-            <small style="opacity: 0.7; text-transform: uppercase;">Configurações</small>
-            <h2 style="font-size: 18px; margin: 10px 0;">API Conectada</h2>
+            <small style="opacity: 0.7; text-transform: uppercase;">Status Banco</small>
+            <h2 style="font-size: 18px; margin: 10px 0;">Supabase Online</h2>
         </div>
     </div>
 
     <div style="background: #f9f9fb; padding: 30px; border-radius: 15px; border: 1px solid #e1e4e8; margin-bottom: 40px;">
-        <h3 style="margin-top: 0; color: #2f3542;"><i class="fas fa-key" style="color: #ffa502;"></i> Configuração de Chaves API</h3>
+        <h3 style="margin-top: 0; color: #2f3542;"><i class="fas fa-key" style="color: #ffa502;"></i> Atalho: Chaves de Integração</h3>
         <form action="{{ url_for('admin_configuracoes') }}" method="POST" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px;">
             <div>
-                <label style="display: block; font-weight: bold; margin-bottom: 8px;">Access Token Mercado Pago:</label>
-                <input type="password" name="mercado_pago_token" value="{{ config.get('mercado_pago_token', '') }}" placeholder="APP_USR-..." style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #ddd;">
+                <label style="display: block; font-weight: bold; margin-bottom: 8px;">Mercado Pago Token:</label>
+                <input type="password" name="mercado_pago_token" value="{{ config.get('mercado_pago_token', '') }}" style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #ddd;">
             </div>
             <div>
-                <label style="display: block; font-weight: bold; margin-bottom: 8px;">Token Melhor Envio (Frete):</label>
-                <input type="password" name="melhor_envio_token" value="{{ config.get('melhor_envio_token', '') }}" placeholder="Bearer eyJ..." style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #ddd;">
-            </div>
-            <div>
-                <label style="display: block; font-weight: bold; margin-bottom: 8px;">CEP de Origem:</label>
-                <input type="text" name="cep_origem" value="{{ config.get('cep_origem', '') }}" placeholder="00000-000" style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #ddd;">
+                <label style="display: block; font-weight: bold; margin-bottom: 8px;">Token Melhor Envio:</label>
+                <input type="password" name="melhor_envio_token" value="{{ config.get('melhor_envio_token', '') }}" style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #ddd;">
             </div>
             <div style="display: flex; align-items: flex-end;">
                 <button type="submit" style="background: #2f3542; color: white; border: none; padding: 12px 25px; border-radius: 8px; font-weight: bold; cursor: pointer; width: 100%;">
-                    Salvar Chaves API
+                    Atualizar Chaves
                 </button>
             </div>
         </form>
@@ -61,9 +57,9 @@
     <div style="background: white; padding: 30px; border-radius: 15px; box-shadow: 0 4px 20px rgba(0,0,0,0.05);">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px;">
             <h3 style="margin: 0;"><i class="fas fa-boxes" style="color: #70a1ff;"></i> Catálogo de Produtos</h3>
-            <button onclick="window.location.href='/admin/edit'" style="background: #2ed573; color: white; border: none; padding: 12px 25px; border-radius: 8px; font-weight: bold; cursor: pointer;">
+            <a href="{{ url_for('admin_edit') }}" style="text-decoration: none; background: #2ed573; color: white; border: none; padding: 12px 25px; border-radius: 8px; font-weight: bold; cursor: pointer;">
                 <i class="fas fa-plus"></i> NOVO PRODUTO
-            </button>
+            </a>
         </div>
 
         <div style="overflow-x: auto;">
@@ -80,23 +76,27 @@
                     <tr style="border-bottom: 1px solid #f1f2f6;">
                         <td style="padding: 15px;">
                             <div style="display: flex; align-items: center; gap: 15px;">
-                                <img src="{{ produto.img_path_1 }}" style="width: 45px; height: 45px; border-radius: 6px; object-fit: cover;">
+                                <img src="{{ produto.img_path_1 }}" style="width: 45px; height: 45px; border-radius: 6px; object-fit: cover; background: #eee;">
                                 <span style="font-weight: 600;">{{ produto.nome }}</span>
                             </div>
                         </td>
                         <td style="padding: 15px; font-weight: bold; color: #2ed573;">
-                            R$ {{ "%.2f"|format(produto.preco)|replace('.', ',') }}
+                            R$ {{ "%.2f"|format(produto.preco|float)|replace('.', ',') }}
                         </td>
                         <td style="padding: 15px; text-align: center; display: flex; justify-content: center; gap: 10px;">
-                            <a href="/admin/edit/{{ produto.id }}" style="color: #1e90ff; text-decoration: none; font-weight: bold; border: 1px solid #1e90ff; padding: 5px 10px; border-radius: 5px;">
+                            <a href="{{ url_for('admin_edit', id_produto=produto.id) }}" style="color: #1e90ff; text-decoration: none; font-weight: bold; border: 1px solid #1e90ff; padding: 5px 10px; border-radius: 5px;">
                                 <i class="fas fa-edit"></i> Editar
                             </a>
-                            <form action="{{ url_for('admin_delete', id_produto=produto.id) }}" method="POST" style="display:inline;">
+                            <form action="/admin/delete/{{ produto.id }}" method="POST" style="display:inline;">
                                 <button type="submit" style="background:none; border: 1px solid #ff4757; color:#ff4757; padding: 5px 10px; border-radius: 5px; cursor:pointer;" onclick="return confirm('Excluir este produto?')">
                                     <i class="fas fa-trash"></i>
                                 </button>
                             </form>
                         </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="3" style="text-align: center; padding: 30px; color: #999;">Nenhum produto cadastrado ainda.</td>
                     </tr>
                     {% endfor %}
                 </tbody>
