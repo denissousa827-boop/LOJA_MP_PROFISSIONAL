@@ -3,46 +3,138 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login - Painel Admin</title>
+    <title>Login - Administração {{ config.get('titulo_site', '') }}</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; background: #e9ecef; margin: 0; }
-        .login-card { background: white; padding: 40px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); width: 100%; max-width: 350px; }
-        h2 { text-align: center; color: #333; margin-bottom: 25px; }
-        label { font-weight: bold; color: #555; display: block; margin-bottom: 5px; }
-        input { width: 100%; padding: 12px; margin-bottom: 20px; border: 1px solid #ced4da; border-radius: 6px; box-sizing: border-box; font-size: 16px; }
-        input:focus { border-color: #007bff; outline: none; box-shadow: 0 0 0 3px rgba(0,123,255,0.1); }
-        button { width: 100%; padding: 12px; background: #007bff; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 16px; font-weight: bold; transition: background 0.3s; }
-        button:hover { background: #0056b3; }
-        .error-msg { color: #842029; background: #f8d7da; border: 1px solid #f5c2c7; padding: 12px; border-radius: 6px; font-size: 14px; margin-bottom: 20px; text-align: center; }
-        .footer-links { text-align: center; margin-top: 20px; }
-        .footer-links a { color: #6c757d; text-decoration: none; font-size: 14px; }
-        .footer-links a:hover { text-decoration: underline; }
+        :root {
+            --primary: #ff4757;
+            --bg-body: #f1f2f6;
+            --text-dark: #2f3542;
+        }
+
+        body { 
+            font-family: 'Poppins', sans-serif; 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            height: 100vh; 
+            background: var(--bg-body); 
+            margin: 0; 
+        }
+
+        .login-card { 
+            background: white; 
+            padding: 40px; 
+            border-radius: 16px; 
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1); 
+            width: 90%; 
+            max-width: 400px; 
+            text-align: center;
+        }
+
+        .logo-login {
+            max-width: 120px;
+            margin-bottom: 20px;
+        }
+
+        h2 { color: var(--text-dark); margin-bottom: 10px; font-size: 24px; }
+        p { color: #747d8c; margin-bottom: 30px; font-size: 14px; }
+
+        .form-group { text-align: left; margin-bottom: 20px; }
+        
+        label { font-weight: 600; color: #57606f; display: block; margin-bottom: 8px; font-size: 14px; }
+        
+        input { 
+            width: 100%; 
+            padding: 14px; 
+            border: 2px solid #edeff2; 
+            border-radius: 10px; 
+            box-sizing: border-box; 
+            font-size: 16px; 
+            transition: all 0.3s ease;
+            background: #f9f9fb;
+        }
+
+        input:focus { 
+            border-color: var(--primary); 
+            background: white;
+            outline: none; 
+            box-shadow: 0 0 0 4px rgba(255, 71, 87, 0.1); 
+        }
+
+        button { 
+            width: 100%; 
+            padding: 14px; 
+            background: var(--primary); 
+            color: white; 
+            border: none; 
+            border-radius: 10px; 
+            cursor: pointer; 
+            font-size: 16px; 
+            font-weight: 700; 
+            transition: all 0.3s;
+            margin-top: 10px;
+        }
+
+        button:hover { background: #ff6b81; transform: translateY(-2px); }
+
+        .error-msg { 
+            color: #d63031; 
+            background: #fab1a055; 
+            border: 1px solid #fab1a0; 
+            padding: 12px; 
+            border-radius: 8px; 
+            font-size: 14px; 
+            margin-bottom: 25px; 
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .footer-links { margin-top: 25px; border-top: 1px solid #f1f2f6; padding-top: 20px; }
+        .footer-links a { color: #a4b0be; text-decoration: none; font-size: 14px; transition: 0.3s; }
+        .footer-links a:hover { color: var(--primary); }
     </style>
 </head>
 <body>
     <div class="login-card">
-        <h2>Acesso Admin</h2>
+        {% if config.get('logo_img') %}
+            <img src="{{ config.get('logo_img') }}" class="logo-login" alt="Logo">
+        {% endif %}
+        
+        <h2>Painel Admin</h2>
+        <p>Acesse com seu e-mail cadastrado no Supabase</p>
 
         {% with messages = get_flashed_messages() %}
           {% if messages %}
             {% for message in messages %}
-              <div class="error-msg">{{ message }}</div>
+              <div class="error-msg">
+                  <i class="fas fa-exclamation-circle"></i> {{ message }}
+              </div>
             {% endfor %}
           {% endif %}
         {% endwith %}
 
         <form method="POST" action="{{ url_for('admin_login') }}">
-            <label for="username">Usuário</label>
-            <input type="text" id="username" name="username" placeholder="Digite seu usuário" required autocomplete="username">
+            <div class="form-group">
+                <label for="username">E-mail</label>
+                <input type="email" id="username" name="username" 
+                       placeholder="denis@exemplo.com" required 
+                       autocomplete="email">
+            </div>
             
-            <label for="password">Senha</label>
-            <input type="password" id="password" name="password" placeholder="Digite sua senha" required autocomplete="current-password">
+            <div class="form-group">
+                <label for="password">Senha</label>
+                <input type="password" id="password" name="password" 
+                       placeholder="••••••••" required 
+                       autocomplete="current-password">
+            </div>
             
-            <button type="submit">Entrar no Painel</button>
+            <button type="submit">Entrar no Sistema</button>
         </form>
 
         <div class="footer-links">
-            <a href="{{ url_for('homepage') }}">← Voltar para a Loja</a>
+            <a href="{{ url_for('homepage') }}"><i class="fas fa-arrow-left"></i> Voltar para a Loja</a>
         </div>
     </div>
 </body>
