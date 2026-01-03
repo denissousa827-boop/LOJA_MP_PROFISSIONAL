@@ -14,7 +14,10 @@ app.secret_key = os.getenv("SECRET_KEY", "chave_ultra_secreta_denis")
 
 # Inicializa o banco de dados e as tabelas no Supabase (Executa apenas uma vez)
 with app.app_context():
-    database.init_db()
+    try:
+        database.init_db()
+    except Exception as e:
+        print(f"Erro ao iniciar banco: {e}")
 
 # --- FUNÇÕES AUXILIARES ---
 def allowed_file(filename):
@@ -42,7 +45,6 @@ def produto_detalhes(id_produto):
     if not produto:
         return redirect(url_for('homepage'))
     config, banner_pagamento = load_shop_config()
-    # Coleta imagens existentes (1 a 4)
     imagens = [produto.get(f'img_path_{i}') for i in range(1, 5) if produto.get(f'img_path_{i}')]
     return render_template("produto_detalhes.html", produto=produto, imagens=imagens, config=config, banner_pagamento=banner_pagamento)
 
@@ -92,27 +94,28 @@ def admin_configuracoes():
         for campo in campos:
             configs_para_salvar[campo] = request.form.get(campo)
 
-        # Upload da Logo para Supabase
         logo_file = request.files.get('logo_img')
         if logo_file and allowed_file(logo_file.filename):
             url_logo = database.upload_imagem_supabase(logo_file)
             if url_logo:
                 configs_para_salvar['logo_img'] = url_logo
 
-        # Salvando de forma otimizada no banco do Supabase
+        # Salvamento otimizado com fechamento garantido de conexão
         conn = database.create_connection()
         if conn:
             try:
-                with conn:
-                    with conn.cursor() as cur:
-                        for k, v in configs_para_salvar.items():
-                            cur.execute("""
-                                INSERT INTO configuracoes (chave, valor) 
-                                VALUES (%s, %s) 
-                                ON CONFLICT (chave) 
-                                DO UPDATE SET valor = EXCLUDED.valor
-                            """, (k, v))
+                with conn.cursor() as cur:
+                    for k, v in configs_para_salvar.items():
+                        cur.execute("""
+                            INSERT INTO configuracoes (chave, valor) 
+                            VALUES (%s, %s) 
+                            ON CONFLICT (chave) 
+                            DO UPDATE SET valor = EXCLUDED.valor
+                        """, (k, v))
+                conn.commit()
                 flash("Configurações atualizadas com sucesso!")
+            except Exception as e:
+                flash(f"Erro ao salvar configurações: {e}")
             finally:
                 conn.close()
         
@@ -144,7 +147,6 @@ def admin_edit(id_produto=None):
             'tempo_preparo': request.form.get('tempo_preparo')
         }
 
-        # Upload das 4 imagens para o Supabase
         for i in range(1, 5):
             file = request.files.get(f'imagem_{i}')
             if file and allowed_file(file.filename):
@@ -152,7 +154,6 @@ def admin_edit(id_produto=None):
                 if url_publica:
                     dados[f'img_path_{i}'] = url_publica
 
-        # Upload de vídeo para o Supabase
         video_file = request.files.get('video')
         if video_file and allowed_file(video_file.filename):
             url_video = database.upload_imagem_supabase(video_file)
@@ -210,7 +211,7 @@ def processar_pagamento():
     except Exception as e:
         return f"Erro ao processar: {e}", 500
 
-# Necessário para a Vercel identificar o app
+# Necessário para a Vercel identificar o app (Não remova)
 app = app
 
 if __name__ == "__main__":
