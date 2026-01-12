@@ -8,9 +8,6 @@ from dotenv import load_dotenv
 # Carrega as variáveis do arquivo .env localmente
 load_dotenv()
 
-# Configuração seguindo o padrão Vite/Supabase que definimos
-SUPABASE_URL = os.getenv("VITE_SUPABASE_URL")
-SUPABASE_KEY = os.getenv("VITE_SUPABASE_ANON_KEY")
 DATABASE_URL = os.getenv("DATABASE_URL")
 
 # Correção automática para o protocolo do SQLAlchemy/Postgres
@@ -19,12 +16,10 @@ if DATABASE_URL and DATABASE_URL.startswith("postgres://"):
 
 def create_connection():
     """Cria a conexão com o PostgreSQL do Supabase com SSL obrigatório"""
-    if not DATABASE_URL:
-        # Resolve o erro visualizado nos logs do Termux
-        print("ERRO: DATABASE_URL não configurada.")
+    if not DATABASE_URL or "sua-string" in DATABASE_URL:
+        print("ERRO: DATABASE_URL não configurada corretamente no .env")
         return None
     try:
-        # sslmode='require' permite a conexão externa com o Supabase
         conn = psycopg2.connect(DATABASE_URL, sslmode='require')
         return conn
     except Exception as e:
@@ -47,7 +42,7 @@ def init_db():
             )
         """)
 
-        # Tabela de Produtos (Estrutura Completa)
+        # Tabela de Produtos
         cur.execute("""
             CREATE TABLE IF NOT EXISTS produtos (
                 id TEXT PRIMARY KEY,
@@ -60,6 +55,28 @@ def init_db():
                 novo_preco FLOAT,
                 oferta_fim TEXT,
                 estoque INTEGER DEFAULT 0
+            )
+        """)
+
+        # NOVA: Tabela de Configurações (Necessária para o main.py)
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS configuracoes (
+                chave TEXT PRIMARY KEY,
+                valor TEXT
+            )
+        """)
+
+        # NOVA: Tabela de Vendas (Necessária para o checkout)
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS vendas (
+                id SERIAL PRIMARY KEY,
+                nome_cliente TEXT,
+                email_cliente TEXT,
+                whatsapp_cliente TEXT,
+                produto_nome TEXT,
+                quantidade INTEGER,
+                valor_total FLOAT,
+                data TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         """)
 
@@ -77,11 +94,74 @@ def init_db():
         conn.commit()
         cur.close()
         conn.close()
-        print("✅ Supabase sincronizado com sucesso!")
+        print("✅ Supabase sincronizado e tabelas criadas!")
     except Exception as e:
         print(f"Erro ao inicializar tabelas: {e}")
 
-# --- FUNÇÕES ORIGINAIS ADAPTADAS ---
+# --- FUNÇÕES DE CONFIGURAÇÃO (RESOLVE O ERRO DO MAIN.PY) ---
+
+def get_configuracoes():
+    conn = create_connection()
+    if not conn: return {}
+    try:
+        cur = conn.cursor()
+        cur.execute("SELECT chave, valor FROM configuracoes")
+        res = cur.fetchall()
+        cur.close()
+        conn.close()
+        return {row[0]: row[1] for row in res}
+    except:
+        return {}
+
+def update_configuracao(chave, valor):
+    conn = create_connection()
+    if not conn: return
+    try:
+        cur = conn.cursor()
+        cur.execute("""
+            INSERT INTO configuracoes (chave, valor) VALUES (%s, %s)
+            ON CONFLICT (chave) DO UPDATE SET valor = EXCLUDED.valor
+        """, (chave, valor))
+        conn.commit()
+        cur.close()
+        conn.close()
+    except Exception as e:
+        print(f"Erro ao atualizar config: {e}")
+
+# --- FUNÇÕES DE VENDAS ---
+
+def registrar_venda(nome_cliente, email_cliente, whatsapp_cliente, produto_nome, quantidade, valor_total):
+    conn = create_connection()
+    if not conn: return None
+    try:
+        cur = conn.cursor()
+        cur.execute("""
+            INSERT INTO vendas (nome_cliente, email_cliente, whatsapp_cliente, produto_nome, quantidade, valor_total) 
+            VALUES (%s, %s, %s, %s, %s, %s) RETURNING id
+        """, (nome_cliente, email_cliente, whatsapp_cliente, produto_nome, quantidade, valor_total))
+        venda_id = cur.fetchone()[0]
+        conn.commit()
+        cur.close()
+        conn.close()
+        return venda_id
+    except Exception as e:
+        print(f"Erro ao registrar venda: {e}")
+        return None
+
+def get_vendas():
+    conn = create_connection()
+    if not conn: return []
+    try:
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+        cur.execute("SELECT * FROM vendas ORDER BY id DESC")
+        res = cur.fetchall()
+        cur.close()
+        conn.close()
+        return [dict(r) for r in res]
+    except:
+        return []
+
+# --- FUNÇÕES ORIGINAIS DE PRODUTOS ---
 
 def get_produtos():
     conn = create_connection()
@@ -132,7 +212,9 @@ def add_or_update_produto(dados):
             ON CONFLICT (id) DO UPDATE SET
             nome=EXCLUDED.nome, preco=EXCLUDED.preco, descricao=EXCLUDED.descricao,
             em_oferta=EXCLUDED.em_oferta, novo_preco=EXCLUDED.novo_preco, estoque=EXCLUDED.estoque,
-            img_path_1=EXCLUDED.img_path_1, img_path_2=EXCLUDED.img_path_2
+            img_path_1=EXCLUDED.img_path_1, img_path_2=EXCLUDED.img_path_2,
+            img_path_3=EXCLUDED.img_path_3, img_path_4=EXCLUDED.img_path_4,
+            video_path=EXCLUDED.video_path
         """
         cur.execute(sql, (
             id_prod, dados.get('nome'), float(str(dados.get('preco')).replace(',', '.')),
@@ -147,6 +229,15 @@ def add_or_update_produto(dados):
         return id_prod
     except Exception as e:
         print(f"Erro ao salvar produto no Supabase: {e}")
+
+def delete_produto(id_prod):
+    conn = create_connection()
+    if not conn: return
+    cur = conn.cursor()
+    cur.execute("DELETE FROM produtos WHERE id = %s", (str(id_prod),))
+    conn.commit()
+    cur.close()
+    conn.close()
 
 def is_valid_login(user, pwd):
     conn = create_connection()
