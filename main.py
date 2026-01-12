@@ -12,7 +12,6 @@ app = Flask(__name__)
 app.secret_key = 'chave_ultra_secreta_denis'
 
 # --- CONFIGURAÇÃO DE AMBIENTE (TERMUX vs VERCEL) ---
-# Se estiver na Vercel, o sistema de arquivos é somente leitura, então usamos /tmp
 IS_VERCEL = "VERCEL" in os.environ
 
 if IS_VERCEL:
@@ -23,11 +22,10 @@ else:
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'mp4'}
 
-# Garante que a pasta de uploads exista apenas se não estiver na Vercel
 if not IS_VERCEL:
     os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
-# Inicializa o banco de dados (agora configurado para o Supabase no database.py)
+# Inicializa o banco de dados (Supabase)
 database.init_db()
 
 # --- FUNÇÕES AUXILIARES ---
@@ -66,17 +64,24 @@ def checkout(id_produto):
     config, _ = load_shop_config()
     return render_template("checkout.html", produto=produto, config=config)
 
-# --- SISTEMA DE LOGIN ---
+# --- SISTEMA DE LOGIN (ATUALIZADO PARA LOJA ELITE) ---
 @app.route("/admin/login", methods=['GET', 'POST'])
 def admin_login():
+    # Captura a mensagem da URL para exibir no template Elite
+    message = request.args.get('message')
+    
     if request.method == 'POST':
         user = request.form.get('username')
         pw = request.form.get('password')
+        
         if database.is_valid_login(user, pw):
             session['admin_logged_in'] = True
             return redirect(url_for('admin_dashboard'))
-        flash("Usuário ou senha inválidos.")
-    return render_template("admin_login.html")
+        
+        # Redireciona com mensagem de erro igual ao seu modelo
+        return redirect(url_for('admin_login', message="Dados incorretos."))
+        
+    return render_template("admin_login.html", message=message)
 
 @app.route("/admin/logout")
 def admin_logout():
@@ -110,7 +115,6 @@ def admin_configuracoes():
             filename = secure_filename(file.filename)
             path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
             file.save(path)
-            # Na Vercel, o caminho seria temporário, para produção recomenda-se Supabase Storage
             database.update_configuracao('logo_img', f'/{path}')
 
         flash("Configurações atualizadas!")
@@ -152,7 +156,6 @@ def admin_edit(id_produto=None):
             'tempo_preparo': request.form.get('tempo_preparo')
         }
 
-        # Upload de arquivos
         for i in range(1, 5):
             file = request.files.get(f'imagem_{i}')
             if file and allowed_file(file.filename):

@@ -3,37 +3,59 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login - Painel Admin</title>
-    <style>
-        body { font-family: sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; background: #f4f4f4; margin: 0; }
-        .login-card { background: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); width: 300px; }
-        input { width: 100%; padding: 10px; margin: 10px 0; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
-        button { width: 100%; padding: 10px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; }
-        .error-msg { color: #721c24; background: #f8d7da; padding: 10px; border-radius: 4px; font-size: 14px; margin-bottom: 10px; text-align: center; }
-    </style>
+    <title>Acesso Exclusivo - LOJA ELITE</title>
 </head>
-<body>
-    <div class="login-card">
-        <h2 style="text-align: center;">Admin</h2>
+<body style="background-color: #0f172a; min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 24px; font-family: sans-serif; margin: 0;">
 
-        {% with messages = get_flashed_messages() %}
-          {% if messages %}
-            {% for message in messages %}
-              <div class="error-msg">{{ message }}</div>
-            {% endfor %}
-          {% endif %}
-        {% endwith %}
+    <div style="background-color: #ffffff; width: 100%; maxWidth: 400px; border-radius: 32px; border: 6px solid #1e293b; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5); overflow: hidden; max-width: 400px;">
+        
+        <div style="background-color: #1e293b; padding: 40px 20px; text-align: center;">
+            <h1 style="color: #ffffff; font-size: 28px; font-weight: 900; letter-spacing: -1px; margin: 0;">LOJA ELITE</h1>
+            <p style="color: #94a3b8; font-size: 12px; font-weight: 700; text-transform: uppercase; margin-top: 8px; letter-spacing: 2px;">Acesso Exclusivo</p>
+        </div>
 
-        <form method="POST">
-            <label for="username">Usuário:</label>
-            <input type="text" id="username" name="username" required>
-            
-            <label for="password">Senha:</label>
-            <input type="password" id="password" name="password" required>
-            
-            <button type="submit">Entrar</button>
-        </form>
-        <p style="text-align: center;"><a href="{{ url_for('homepage') }}">Voltar para a Loja</a></p>
+        <div style="padding: 32px;">
+            <form method="POST" style="display: flex; flexDirection: column; display: flex; flex-direction: column; gap: 20px;">
+                
+                <div style="display: flex; flex-direction: column; gap: 8px;">
+                    <label style="font-size: 11px; font-weight: 800; color: #64748b; text-transform: uppercase; margin-left: 4px;">Usuário Admin</label>
+                    <input
+                        name="username"
+                        type="text"
+                        placeholder="utbdenis6752"
+                        style="width: 100%; padding: 16px; border-radius: 16px; border: 2px solid #e2e8f0; background-color: #f8fafc; outline: none; font-weight: 600; box-sizing: border-box;"
+                        required
+                    />
+                </div>
+
+                <div style="display: flex; flex-direction: column; gap: 8px;">
+                    <label style="font-size: 11px; font-weight: 800; color: #64748b; text-transform: uppercase; margin-left: 4px;">Senha de Acesso</label>
+                    <input
+                        name="password"
+                        type="password"
+                        placeholder="••••••••"
+                        style="width: 100%; padding: 16px; border-radius: 16px; border: 2px solid #e2e8f0; background-color: #f8fafc; outline: none; font-weight: 600; box-sizing: border-box;"
+                        required
+                    />
+                </div>
+
+                <div style="display: flex; flex-direction: column; gap: 12px; margin-top: 16px;">
+                    <button
+                        type="submit"
+                        style="width: 100%; background-color: #2563eb; color: #ffffff; font-weight: 900; padding: 18px; border-radius: 16px; border: none; cursor: pointer; font-size: 14px; text-transform: uppercase; box-shadow: 0 4px 0 #1d4ed8;"
+                    >
+                        Entrar no Painel
+                    </button>
+                </div>
+
+                {% if message %}
+                <div style="margin-top: 20px; padding: 12px; background-color: #eff6ff; border: 1px solid #dbeafe; color: #1e40af; border-radius: 12px; font-size: 12px; text-align: center; font-weight: 700;">
+                    {{ message }}
+                </div>
+                {% endif %}
+            </form>
+        </div>
     </div>
+
 </body>
 </html>
