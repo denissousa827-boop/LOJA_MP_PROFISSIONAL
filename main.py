@@ -11,13 +11,23 @@ import database
 app = Flask(__name__)
 app.secret_key = 'chave_ultra_secreta_denis'
 
-# Configurações de Upload
-UPLOAD_FOLDER = 'static/uploads'
-ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'mp4'}
-app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+# --- CONFIGURAÇÃO DE AMBIENTE (TERMUX vs VERCEL) ---
+# Se estiver na Vercel, o sistema de arquivos é somente leitura, então usamos /tmp
+IS_VERCEL = "VERCEL" in os.environ
 
-# Garante que a pasta de uploads exista
-os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+if IS_VERCEL:
+    UPLOAD_FOLDER = '/tmp'
+else:
+    UPLOAD_FOLDER = 'static/uploads'
+
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'mp4'}
+
+# Garante que a pasta de uploads exista apenas se não estiver na Vercel
+if not IS_VERCEL:
+    os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+
+# Inicializa o banco de dados (agora configurado para o Supabase no database.py)
 database.init_db()
 
 # --- FUNÇÕES AUXILIARES ---
@@ -45,7 +55,6 @@ def produto_detalhes(id_produto):
     if not produto:
         return redirect(url_for('homepage'))
     config, banner_pagamento = load_shop_config()
-    # Coleta imagens existentes (1 a 4)
     imagens = [produto.get(f'img_path_{i}') for i in range(1, 5) if produto.get(f'img_path_{i}')]
     return render_template("produto_detalhes.html", produto=produto, imagens=imagens, config=config, banner_pagamento=banner_pagamento)
 
@@ -101,6 +110,7 @@ def admin_configuracoes():
             filename = secure_filename(file.filename)
             path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
             file.save(path)
+            # Na Vercel, o caminho seria temporário, para produção recomenda-se Supabase Storage
             database.update_configuracao('logo_img', f'/{path}')
 
         flash("Configurações atualizadas!")
@@ -117,14 +127,11 @@ def admin_edit(id_produto=None):
         return redirect(url_for('admin_login'))
 
     if request.method == 'POST':
-        # Mantendo sua lógica original de tratamento de preços com replace
         try:
             preco_raw = request.form.get('preco', '0').replace(',', '.')
             preco = float(preco_raw) if preco_raw else 0.0
-            
             novo_preco_raw = request.form.get('novo_preco', '0').replace(',', '.')
             novo_preco = float(novo_preco_raw) if novo_preco_raw else 0.0
-            
             frete_gratis_raw = request.form.get('frete_gratis_valor', '0').replace(',', '.')
             frete_gratis = float(frete_gratis_raw) if frete_gratis_raw else 0.0
         except ValueError:
@@ -138,7 +145,6 @@ def admin_edit(id_produto=None):
             'em_oferta': 'em_oferta' in request.form,
             'novo_preco': novo_preco,
             'oferta_fim': request.form.get('oferta_fim'),
-            # Adicionando as novas chaves profissionais
             'desconto_pix': int(request.form.get('desconto_pix') or 0),
             'estoque': int(request.form.get('estoque') or 0),
             'frete_gratis_valor': frete_gratis,
@@ -146,7 +152,7 @@ def admin_edit(id_produto=None):
             'tempo_preparo': request.form.get('tempo_preparo')
         }
 
-        # Upload das 4 imagens
+        # Upload de arquivos
         for i in range(1, 5):
             file = request.files.get(f'imagem_{i}')
             if file and allowed_file(file.filename):
@@ -155,7 +161,6 @@ def admin_edit(id_produto=None):
                 file.save(path)
                 dados[f'img_path_{i}'] = f'/{path}' 
         
-        # Upload de vídeo
         video_file = request.files.get('video')
         if video_file and allowed_file(video_file.filename):
             v_filename = secure_filename(video_file.filename)
@@ -170,14 +175,6 @@ def admin_edit(id_produto=None):
     produto = database.get_produto_por_id(id_produto) if id_produto else None
     config, _ = load_shop_config()
     return render_template("admin_editar.html", produto=produto, config=config)
-
-@app.route("/admin/delete/<id_produto>", methods=['POST'])
-def admin_delete(id_produto):
-    if not session.get('admin_logged_in'):
-        return redirect(url_for('admin_login'))
-    database.delete_produto(id_produto)
-    flash("Produto excluído!")
-    return redirect(url_for('admin_dashboard'))
 
 # --- APIs ---
 @app.route("/calcular_frete", methods=['POST'])
@@ -195,7 +192,6 @@ def calcular_frete():
 
     preco_base = float(produto['novo_preco'] if produto.get('em_oferta') else produto['preco'])
     
-    # Lógica de Frete Grátis Profissional
     limite_frete = float(produto.get('frete_gratis_valor') or 0)
     if limite_frete > 0 and preco_base >= limite_frete:
         return jsonify([{
@@ -219,7 +215,6 @@ def processar_pagamento():
         frete = float(request.form.get('frete_valor') or 0)
         preco = float(produto['novo_preco'] if produto.get('em_oferta') else produto['preco'])
         
-        # Aplica desconto extra se for PIX (Funcionalidade nova)
         metodo = request.form.get('metodo_pagamento', 'cartao')
         if metodo == 'pix' and produto.get('desconto_pix'):
             multiplicador = (100 - int(produto['desconto_pix'])) / 100
