@@ -29,6 +29,10 @@
             <small style="opacity: 0.7; text-transform: uppercase;">Produtos Ativos</small>
             <h2 style="font-size: 32px; margin: 10px 0;">{{ produtos|length }}</h2>
         </div>
+        <div style="background: #ffa502; color: white; padding: 25px; border-radius: 12px;">
+            <small style="opacity: 0.7; text-transform: uppercase;">Clientes Cadastrados</small>
+            <h2 style="font-size: 32px; margin: 10px 0;">{{ clientes|length }}</h2>
+        </div>
         <div style="background: #1e90ff; color: white; padding: 25px; border-radius: 12px;">
             <small style="opacity: 0.7; text-transform: uppercase;">Configurações</small>
             <h2 style="font-size: 18px; margin: 10px 0;">API Conectada</h2>
@@ -58,7 +62,7 @@
         </form>
     </div>
 
-    <div style="background: white; padding: 30px; border-radius: 15px; box-shadow: 0 4px 20px rgba(0,0,0,0.05);">
+    <div style="background: white; padding: 30px; border-radius: 15px; box-shadow: 0 4px 20px rgba(0,0,0,0.05); margin-bottom: 40px;">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px;">
             <h3 style="margin: 0;"><i class="fas fa-boxes" style="color: #70a1ff;"></i> Catálogo de Produtos</h3>
             <button onclick="window.location.href='/admin/edit'" style="background: #2ed573; color: white; border: none; padding: 12px 25px; border-radius: 8px; font-weight: bold; cursor: pointer;">
@@ -103,5 +107,45 @@
             </table>
         </div>
     </div>
+
+    <div style="background: white; padding: 30px; border-radius: 15px; box-shadow: 0 4px 20px rgba(0,0,0,0.05);">
+        <h3 style="margin: 0 0 25px 0; color: #333;"><i class="fas fa-users" style="color: #ffa502;"></i> Clientes Cadastrados</h3>
+        <div style="overflow-x: auto;">
+            <table style="width: 100%; border-collapse: collapse;">
+                <thead>
+                    <tr style="background: #f8f9fa; text-align: left;">
+                        <th style="padding: 12px; border-bottom: 2px solid #dee2e6; color: #555;">Nome</th>
+                        <th style="padding: 12px; border-bottom: 2px solid #dee2e6; color: #555;">E-mail</th>
+                        <th style="padding: 12px; border-bottom: 2px solid #dee2e6; color: #555;">CPF</th>
+                        <th style="padding: 12px; border-bottom: 2px solid #dee2e6; color: #555;">WhatsApp</th>
+                        <th style="padding: 12px; border-bottom: 2px solid #dee2e6; color: #555;">Data Cadastro</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for cliente in clientes %}
+                    <tr style="border-bottom: 1px solid #eee;">
+                        <td style="padding: 12px;">{{ cliente.nome }}</td>
+                        <td style="padding: 12px; color: #1e90ff;">{{ cliente.email }}</td>
+                        <td style="padding: 12px;">{{ cliente.cpf }}</td>
+                        <td style="padding: 12px;">
+                            <a href="https://wa.me/{{ cliente.telefone|replace('(', '')|replace(')', '')|replace('-', '')|replace(' ', '') }}" target="_blank" style="text-decoration: none; color: #2ed573; font-weight: bold;">
+                                <i class="fab fa-whatsapp"></i> {{ cliente.telefone }}
+                            </a>
+                        </td>
+                        <td style="padding: 12px; color: #888; font-size: 0.9em;">{{ cliente.data_cadastro }}</td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="5" style="padding: 30px; text-align: center; color: #a4b0be;">
+                            <i class="fas fa-user-slash" style="display: block; font-size: 2em; margin-bottom: 10px;"></i>
+                            Nenhum cliente cadastrado ainda.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
 </div>
 {% endblock %}

@@ -3,42 +3,43 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cadastro para Promoções</title>
+    <title>Criar Minha Conta</title>
     <style>
-        body { font-family: 'Roboto', sans-serif; background-color: #f8f8f8; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
-        .form-container { background: white; padding: 40px; border-radius: 10px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); width: 400px; }
-        h2 { text-align: center; color: #007bff; margin-bottom: 25px; }
-        label { display: block; margin-top: 15px; margin-bottom: 5px; font-weight: bold; color: #555; }
-        input[type="text"], input[type="email"] { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; font-size: 1em; }
-        button { width: 100%; padding: 15px; background-color: #28a745; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 1.1em; margin-top: 30px; transition: background-color 0.2s; }
-        button:hover { background-color: #1e7e34; }
-        .error { color: #dc3545; text-align: center; margin-bottom: 15px; font-weight: bold; }
-        .back-link { text-align: center; margin-top: 20px; }
-        .back-link a { color: #007bff; text-decoration: none; }
+        body { font-family: 'Roboto', sans-serif; background-color: #f8f8f8; display: flex; justify-content: center; align-items: center; min-height: 100vh; padding: 20px; margin: 0; }
+        .form-container { background: white; padding: 30px; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); width: 100%; max-width: 450px; }
+        h2 { text-align: center; color: #28a745; margin-bottom: 20px; }
+        label { display: block; margin-top: 12px; font-weight: bold; font-size: 14px; }
+        input { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px; box-sizing: border-box; }
+        button { width: 100%; padding: 14px; background-color: #28a745; color: white; border: none; border-radius: 5px; margin-top: 25px; cursor: pointer; font-size: 16px; font-weight: bold; }
+        .back-link { text-align: center; margin-top: 20px; font-size: 14px; }
     </style>
 </head>
 <body>
     <div class="form-container">
-        <h2>Receba Notificações e Promoções</h2>
-        
-        {% if error %}
-            <p class="error">{{ error }}</p>
-        {% endif %}
+        <h2>Criar Conta</h2>
+        <form method="POST" action="/cliente/cadastro">
+            <label>Nome Completo</label>
+            <input type="text" name="nome" required>
 
-        <form method="POST">
-            <label for="nome_completo">Nome Completo:</label>
-            <input type="text" id="nome_completo" name="nome_completo" required>
-            
-            <label for="whatsapp">WhatsApp (com DDD):</label>
-            <input type="text" id="whatsapp" name="whatsapp" placeholder="(99) 99999-9999" required>
-            
-            <label for="email">E-mail:</label>
-            <input type="email" id="email" name="email" required>
-            
-            <button type="submit">Cadastrar</button>
+            <label>CPF</label>
+            <input type="text" name="cpf" placeholder="000.000.000-00" required>
+
+            <label>E-mail</label>
+            <input type="email" name="email" required>
+
+            <label>Telefone / WhatsApp</label>
+            <input type="text" name="telefone" placeholder="(99) 99999-9999" required>
+
+            <label>Criar Senha</label>
+            <input type="password" name="senha" required>
+
+            <label>Confirmar Senha</label>
+            <input type="password" name="confirma_senha" required>
+
+            <button type="submit">Finalizar Cadastro</button>
         </form>
         <div class="back-link">
-            <a href="{{ url_for('homepage') }}">Voltar para a Loja</a>
+            <a href="/cliente/login" style="color: #007bff; text-decoration: none;">Já tenho conta? Fazer Login</a>
         </div>
     </div>
 </body>

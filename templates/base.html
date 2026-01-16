@@ -55,11 +55,38 @@
             color: white;
         }
 
+        nav {
+            display: flex;
+            align-items: center;
+        }
+
         nav a {
             color: white;
             text-decoration: none;
             margin-left: 20px;
             font-weight: 500;
+            transition: 0.3s;
+        }
+
+        nav a:hover {
+            color: var(--primary-color);
+        }
+
+        /* Área do Cliente Profissional */
+        .user-area {
+            background: rgba(255,255,255,0.1);
+            padding: 8px 15px;
+            border-radius: 50px;
+            margin-left: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 0.9em;
+        }
+
+        .user-area a {
+            margin-left: 5px;
+            font-size: 0.85em;
         }
 
         /* Rodapé */
@@ -82,15 +109,33 @@
             margin-bottom: 20px;
         }
 
+        /* Flash Messages */
+        .flash-messages {
+            padding: 15px;
+            text-align: center;
+            background: #d4edda;
+            color: #155724;
+            border-bottom: 1px solid #c3e6cb;
+        }
+
         /* Ajustes para Mobile */
-        @media (max-width: 600px) {
-            .header-content { flex-direction: column; gap: 10px; }
-            nav { margin-top: 10px; }
-            nav a { margin: 0 10px; }
+        @media (max-width: 800px) {
+            .header-content { flex-direction: column; gap: 15px; text-align: center; }
+            nav { flex-wrap: wrap; justify-content: center; }
+            .user-area { margin-left: 0; margin-top: 10px; }
+            nav a { margin: 5px 10px; }
         }
     </style>
 </head>
 <body>
+
+    {% with messages = get_flashed_messages() %}
+      {% if messages %}
+        {% for message in messages %}
+          <div class="flash-messages">{{ message }}</div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
 
     <header>
         <div class="container header-content">
@@ -107,9 +152,20 @@
                 <a href="https://wa.me/{{ config.get('contato_whatsapp') }}" target="_blank">
                     <i class="fab fa-whatsapp"></i> Suporte
                 </a>
+                
                 {% if session.get('admin_logged_in') %}
-                    <a href="{{ url_for('admin_dashboard') }}" style="color: #ffc107;"><i class="fas fa-user-shield"></i> Painel</a>
+                    <a href="{{ url_for('admin_dashboard') }}" style="color: #ffc107;"><i class="fas fa-user-shield"></i> Painel Admin</a>
                 {% endif %}
+
+                <div class="user-area">
+                    {% if session.get('cliente_nome') %}
+                        <span>Olá, <strong>{{ session['cliente_nome'].split()[0] }}</strong></span>
+                        <a href="/meus-pedidos" style="color: #fff; text-decoration: underline;">Pedidos</a>
+                        <a href="{{ url_for('cliente_logout') }}" style="color: #ff4757; font-weight: bold;"><i class="fas fa-sign-out-alt"></i></a>
+                    {% else %}
+                        <a href="{{ url_for('cliente_login') }}"><i class="fas fa-user"></i> Entrar / Cadastrar</a>
+                    {% endif %}
+                </div>
             </nav>
         </div>
     </header>
