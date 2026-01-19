@@ -32,11 +32,12 @@ def init_db():
             )
         """)
 
-        # 2. Tabela de Produtos
+        # 2. Tabela de Produtos (ATUALIZADA COM COLUNA CATEGORIA)
         cur.execute("""
             CREATE TABLE IF NOT EXISTS produtos (
                 id TEXT PRIMARY KEY,
                 nome TEXT NOT NULL,
+                categoria TEXT,
                 preco REAL NOT NULL,
                 descricao TEXT,
                 img_path_1 TEXT, img_path_2 TEXT, img_path_3 TEXT, img_path_4 TEXT,
@@ -51,6 +52,12 @@ def init_db():
                 tempo_preparo TEXT
             )
         """)
+
+        # Tentar adicionar a coluna categoria caso a tabela já exista sem ela
+        try:
+            cur.execute("ALTER TABLE produtos ADD COLUMN categoria TEXT")
+        except:
+            pass # Se a coluna já existir, ele apenas ignora o erro
 
         # 3. Tabela de Configurações
         cur.execute("""
@@ -103,7 +110,7 @@ def init_db():
     except Exception as e:
         print(f"Erro ao inicializar banco local: {e}")
 
-# --- FUNÇÕES DE PRODUTOS (AQUI ESTÁ A FUNÇÃO QUE FALTAVA) ---
+# --- FUNÇÕES DE PRODUTOS ---
 
 def get_produtos():
     conn = create_connection()
@@ -115,12 +122,10 @@ def get_produtos():
     return res
 
 def get_produtos_em_oferta():
-    """Retorna produtos marcados como em oferta"""
     conn = create_connection()
     if not conn: return []
     cur = conn.cursor()
     agora = datetime.datetime.now().strftime("%Y-%m-%dT%H:%M")
-    # Busca produtos onde em_oferta é 1 e a data fim é maior que agora ou nula
     cur.execute("""
         SELECT * FROM produtos 
         WHERE em_oferta = 1 
@@ -139,22 +144,24 @@ def get_produto_por_id(id_prod):
     conn.close()
     return dict(res) if res else None
 
+# FUNÇÃO ATUALIZADA PARA SALVAR CATEGORIA
 def add_or_update_produto(dados):
     conn = create_connection()
     if not conn: return
     cur = conn.cursor()
     id_prod = dados.get('id') or str(int(datetime.datetime.now().timestamp()))[-8:]
     def clean_f(val): return float(str(val).replace(',', '.')) if val else 0.0
+    
     cur.execute("""
         INSERT OR REPLACE INTO produtos (
-            id, nome, preco, descricao, img_path_1, img_path_2, 
+            id, nome, categoria, preco, descricao, img_path_1, img_path_2, 
             img_path_3, img_path_4, video_path, em_oferta, 
             novo_preco, oferta_fim, desconto_pix, estoque,
             frete_gratis_valor, prazo_entrega, tempo_preparo
         )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     """, (
-        id_prod, dados.get('nome'), clean_f(dados.get('preco')),
+        id_prod, dados.get('nome'), dados.get('categoria'), clean_f(dados.get('preco')),
         dados.get('descricao'), dados.get('img_path_1'), dados.get('img_path_2'),
         dados.get('img_path_3'), dados.get('img_path_4'), dados.get('video_path'),
         1 if dados.get('em_oferta') else 0, clean_f(dados.get('novo_preco')), 
@@ -166,7 +173,7 @@ def add_or_update_produto(dados):
     conn.close()
     return id_prod
 
-def delete_produto(id_prod):
+def excluir_produto(id_prod):
     conn = create_connection()
     if not conn: return
     cur = conn.cursor()
@@ -174,7 +181,7 @@ def delete_produto(id_prod):
     conn.commit()
     conn.close()
 
-# --- FUNÇÕES DE CLIENTES E RECUPERAÇÃO ---
+# --- FUNÇÕES DE CLIENTES ---
 
 def salvar_novo_cliente(dados):
     conn = create_connection()
@@ -239,7 +246,7 @@ def get_clientes():
     conn.close()
     return res
 
-# --- OUTRAS FUNÇÕES ---
+# --- CONFIGURAÇÕES ---
 
 def get_configuracoes():
     conn = create_connection()
@@ -255,7 +262,7 @@ def update_configuracao(chave, valor):
     conn = create_connection()
     if not conn: return
     cur = conn.cursor()
-    cur.execute("INSERT OR REPLACE INTO configuracoes (chave, valor) VALUES (?, ?)", (chave, str(valor)))
+    cur.execute("INSERT OR REPLACE INTO configuracoes (chave, valor) VALUES (?, ?)", (chave, valor))
     conn.commit()
     conn.close()
 

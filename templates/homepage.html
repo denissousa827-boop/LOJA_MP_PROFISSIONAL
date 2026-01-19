@@ -2,6 +2,7 @@
 
 {% block content %}
 <style>
+    /* 1. Estilos de Navegação e Menu */
     .user-menu {
         text-align: right;
         padding: 15px 0;
@@ -27,6 +28,41 @@
     .login-link i {
         font-size: 1.2em;
     }
+
+    /* 2. Estilo do Banner Padronizado (Celular primeiro) */
+    .banner-container {
+        width: 100%;
+        margin-top: 10px;
+        margin-bottom: 25px;
+        border-radius: 8px;
+        overflow: hidden;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        height: 180px; /* Altura ideal para mobile */
+    }
+
+    .banner-container img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover; /* Faz a imagem preencher o espaço sem achatar */
+        display: block;
+    }
+
+    /* Ajuste do Banner para Computador */
+    @media (min-width: 768px) {
+        .banner-container {
+            height: 350px; 
+        }
+    }
+
+    /* 3. Estilos de Cards e Ofertas */
+    .card-oferta {
+        background: white; 
+        padding: 15px; 
+        border-radius: 12px; 
+        box-shadow: 0 4px 15px rgba(0,0,0,0.08); 
+        text-align: left; 
+        position: relative;
+    }
 </style>
 
 <div class="container" style="max-width: 1200px; margin: 0 auto; padding: 0 15px;">
@@ -36,6 +72,12 @@
             <i class="fas fa-user-circle"></i> Minha Conta / Sair
         </a>
     </div>
+
+    {% if config.banner_principal %}
+    <div class="banner-container">
+        <img src="{{ config.banner_principal }}" alt="Banner Promocional">
+    </div>
+    {% endif %}
 
     {% if ofertas %}
     <div style="margin-top: 20px; margin-bottom: 20px;">
@@ -49,8 +91,7 @@
         {% for produto in ofertas %}
         {% set preco_final = produto.novo_preco if produto.em_oferta else produto.preco %}
         
-        <div class="card-oferta" style="background: white; padding: 15px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.08); text-align: left; position: relative;">
-
+        <div class="card-oferta">
             {% if produto.preco and produto.novo_preco %}
                 {% set desconto = 100 - (produto.novo_preco | float / produto.preco | float * 100) %}
                 <span style="position: absolute; top: 10px; left: 10px; background: #d10024; color: white; padding: 5px 10px; border-radius: 5px; font-size: 13px; font-weight: bold; z-index: 5;">
@@ -109,7 +150,6 @@
         {% for produto in produtos %}
             {% if not produto.em_oferta %}
             <div style="background: white; padding: 15px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); text-align: left; border: 1px solid #eee; transition: 0.3s; position: relative;">
-                
                 <div style="text-align: center;">
                     <img src="{{ url_for('static', filename='uploads/' + produto.img_path_1.split('/')[-1]) if produto.img_path_1 else '/static/placeholder.png' }}"
                          style="width: 100%; height: 200px; object-fit: contain;">

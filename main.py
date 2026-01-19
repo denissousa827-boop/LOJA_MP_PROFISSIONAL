@@ -11,9 +11,8 @@ import database
 app = Flask(__name__)
 app.secret_key = 'chave_ultra_secreta_denis'
 
-# --- CONFIGURAÇÃO DE AMBIENTE (TERMUX vs VERCEL) ---
+# --- CONFIGURAÇÃO DE AMBIENTE ---
 IS_VERCEL = "VERCEL" in os.environ
-
 if IS_VERCEL:
     UPLOAD_FOLDER = '/tmp'
 else:
@@ -25,7 +24,6 @@ ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'mp4'}
 if not IS_VERCEL:
     os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
-# Inicializa o banco de dados
 with app.app_context():
     database.init_db()
 
@@ -47,6 +45,45 @@ def homepage():
     config, banner_pagamento = load_shop_config()
     return render_template("homepage.html", produtos=produtos, ofertas=ofertas, config=config, banner_pagamento=banner_pagamento)
 
+# --- NOVA ROTA DE PESQUISA ADICIONADA ---
+@app.route("/pesquisar")
+def pesquisar():
+    query = request.args.get('q', '')
+    config, banner_pagamento = load_shop_config()
+    todos_produtos = database.get_produtos()
+    
+    produtos_encontrados = []
+    if query:
+        # Filtra os produtos pelo nome ou descrição (insensível a maiúsculas/minúsculas)
+        query = query.lower()
+        for p in todos_produtos:
+            nome = p.get('nome', '').lower()
+            descricao = p.get('descricao', '').lower()
+            if query in nome or query in descricao:
+                produtos_encontrados.append(p)
+    
+    return render_template("pesquisa.html", produtos=produtos_encontrados, query=query, config=config, banner_pagamento=banner_pagamento)
+
+# --- ROTA DE CATEGORIAS ATUALIZADA ---
+@app.route("/categoria/<nome_categoria>")
+def categoria(nome_categoria):
+    config, banner_pagamento = load_shop_config()
+    todos_produtos = database.get_produtos()
+    
+    produtos_categoria = []
+    cat_search = nome_categoria.lower()
+    
+    for p in todos_produtos:
+        # Primeiro verifica se existe o campo categoria salvo no banco de dados
+        categoria_prod = str(p.get('categoria', '')).lower()
+        descricao_prod = str(p.get('descricao', '')).lower()
+        
+        # Se a categoria bater exatamente ou se estiver na descrição (como backup)
+        if cat_search == categoria_prod or cat_search in descricao_prod:
+            produtos_categoria.append(p)
+            
+    return render_template("pesquisa.html", produtos=produtos_categoria, query=nome_categoria, config=config, banner_pagamento=banner_pagamento)
+
 @app.route("/produto/<id_produto>")
 def produto_detalhes(id_produto):
     produto = database.get_produto_por_id(id_produto)
@@ -64,43 +101,20 @@ def checkout(id_produto):
     config, _ = load_shop_config()
     return render_template("checkout.html", produto=produto, config=config)
 
-# --- SISTEMA DE LOGIN ADMINISTRATIVO ---
-@app.route("/admin/login", methods=['GET', 'POST'])
-def admin_login():
-    message = request.args.get('message')
-    if request.method == 'POST':
-        user = request.form.get('username')
-        pw = request.form.get('password')
-        if database.is_valid_login(user, pw):
-            session['admin_logged_in'] = True
-            return redirect(url_for('admin_dashboard'))
-        return redirect(url_for('admin_login', message="Dados incorretos."))
-    return render_template("admin_login.html", message=message)
-
-@app.route("/admin/logout")
-def admin_logout():
-    session.pop('admin_logged_in', None)
-    return redirect(url_for('admin_login'))
-
-# --- SISTEMA DE ACESSO DO CLIENTE (LOGIN E LOGOUT) ---
+# --- SISTEMA DE LOGIN DO CLIENTE ---
 @app.route("/cliente/login", methods=['GET', 'POST'])
 def cliente_login():
     if request.method == 'POST':
         email = request.form.get('email')
         senha = request.form.get('senha')
-        
-        # Chama a função que criamos no database.py
         cliente = database.verificar_login_cliente(email, senha)
-        
         if cliente:
-            # Armazena os dados na sessão (Padrão Profissional)
             session['cliente_id'] = cliente['id']
             session['cliente_nome'] = cliente['nome']
             flash(f"Bem-vindo de volta, {cliente['nome']}!")
             return redirect(url_for('homepage'))
         else:
             flash("E-mail ou senha incorretos.")
-            
     return render_template("cliente_login.html")
 
 @app.route("/cliente/logout")
@@ -120,34 +134,26 @@ def cliente_cadastro_rota():
             'telefone': request.form.get('telefone'),
             'senha': request.form.get('senha')
         }
-        # SALVA NO BANCO DE DADOS ATRAVÉS DO DATABASE.PY
         sucesso = database.salvar_novo_cliente(dados)
-        
         if sucesso:
             flash("Conta criada com sucesso! Faça seu login.")
             return redirect(url_for('cliente_login'))
         else:
             flash("Erro ao criar conta. Verifique se o E-mail ou CPF já estão cadastrados.")
-    
     return render_template("cadastro_cliente.html")
 
-# --- ROTAS DE RECUPERAÇÃO DE SENHA ---
+# --- RECUPERAÇÃO DE SENHA DO CLIENTE ---
 @app.route("/cliente/recuperar-senha", methods=['GET', 'POST'])
 def recuperar_senha():
     if request.method == 'POST':
         email = request.form.get('email')
         cpf = request.form.get('cpf')
-        
         cliente = database.verificar_dados_recuperacao(email, cpf)
-        
         if cliente:
-            # Se os dados estiverem certos, mandamos para a página de nova senha
-            # Usamos a sessão temporária para autorizar a troca
             session['id_recuperacao'] = cliente['id']
             return redirect(url_for('nova_senha'))
         else:
             flash("Dados não encontrados. Verifique o E-mail e o CPF.")
-            
     config, _ = load_shop_config()
     return render_template("recuperar_senha.html", config=config)
 
@@ -155,61 +161,74 @@ def recuperar_senha():
 def nova_senha():
     if not session.get('id_recuperacao'):
         return redirect(url_for('recuperar_senha'))
-    
     if request.method == 'POST':
-        nova_senha = request.form.get('senha')
+        nova_s = request.form.get('senha')
         confirmacao = request.form.get('confirmacao')
-        
-        if nova_senha == confirmacao:
-            database.atualizar_senha_cliente(session['id_recuperacao'], nova_senha)
+        if nova_s == confirmacao:
+            database.atualizar_senha_cliente(session['id_recuperacao'], nova_s)
             session.pop('id_recuperacao', None)
             flash("Senha alterada com sucesso! Faça login.")
             return redirect(url_for('cliente_login'))
         else:
             flash("As senhas não coincidem.")
-            
     config, _ = load_shop_config()
     return render_template("nova_senha.html", config=config)
 
-# --- PAINEL ADMIN E CONFIGURAÇÕES ---
+# --- SISTEMA ADMINISTRATIVO ---
+@app.route("/admin/login", methods=['GET', 'POST'])
+def admin_login():
+    if request.method == 'POST':
+        user = request.form.get('username')
+        pw = request.form.get('password')
+        if database.is_valid_login(user, pw):
+            session['admin_logged_in'] = True
+            return redirect(url_for('admin_dashboard'))
+        flash("Dados incorretos.")
+    return render_template("admin_login.html")
+
+@app.route("/admin/logout")
+def admin_logout():
+    session.pop('admin_logged_in', None)
+    flash("Sessão encerrada.")
+    return redirect(url_for('admin_login'))
+
 @app.route("/admin/dashboard")
 def admin_dashboard():
     if not session.get('admin_logged_in'):
         return redirect(url_for('admin_login'))
-    
     vendas = database.get_vendas()
     produtos = database.get_produtos()
     clientes = database.get_clientes() 
     config, _ = load_shop_config()
-    
-    return render_template("admin_dashboard.html", 
-                           vendas=vendas, 
-                           produtos=produtos, 
-                           clientes=clientes, 
-                           config=config)
+    return render_template("admin_dashboard.html", vendas=vendas, produtos=produtos, clientes=clientes, config=config)
 
 @app.route("/admin/configuracoes", methods=['GET', 'POST'])
 def admin_configuracoes():
     if not session.get('admin_logged_in'):
         return redirect(url_for('admin_login'))
+    
     if request.method == 'POST':
         campos = ['titulo_site', 'contato_whatsapp', 'contato_email', 'header_color', 'footer_color', 'mercado_pago_token', 'melhor_envio_token', 'cep_origem']
         for campo in campos:
             valor = request.form.get(campo)
             if valor is not None: database.update_configuracao(campo, valor)
         
-        file = request.files.get('logo_img')
-        if file and allowed_file(file.filename):
-            filename = secure_filename(file.filename)
-            path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-            file.save(path)
-            database.update_configuracao('logo_img', f'/{path}')
+        for file_key in ['logo_img', 'banner_principal']:
+            file = request.files.get(file_key)
+            if file and allowed_file(file.filename):
+                filename = secure_filename(file.filename)
+                filename = f"{int(datetime.datetime.now().timestamp())}_{filename}"
+                path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+                file.save(path)
+                database.update_configuracao(file_key, f'/static/uploads/{filename}')
+
         flash("Configurações atualizadas!")
         return redirect(url_for('admin_dashboard'))
+    
     config, _ = load_shop_config()
     return render_template("admin_configuracoes.html", config=config)
 
-# --- GERENCIAMENTO DE PRODUTOS ---
+# --- GERENCIAMENTO DE PRODUTOS ATUALIZADO ---
 @app.route("/admin/edit", methods=['GET', 'POST'])
 @app.route("/admin/edit/<id_produto>", methods=['GET', 'POST'])
 def admin_edit(id_produto=None):
@@ -221,6 +240,7 @@ def admin_edit(id_produto=None):
             dados = {
                 'id': id_produto or request.form.get('id'),
                 'nome': request.form.get('nome'),
+                'categoria': request.form.get('categoria'), # NOVA LINHA PARA CATEGORIA
                 'preco': to_f(request.form.get('preco')),
                 'descricao': request.form.get('descricao'),
                 'em_oferta': 'em_oferta' in request.form,
@@ -238,7 +258,7 @@ def admin_edit(id_produto=None):
                     fname = secure_filename(f.filename)
                     path = os.path.join(app.config['UPLOAD_FOLDER'], fname)
                     f.save(path)
-                    dados[f'img_path_{i}'] = f'/{path}'
+                    dados[f'img_path_{i}'] = f'/static/uploads/{fname}'
             database.add_or_update_produto(dados)
             flash("Produto salvo!")
             return redirect(url_for('admin_dashboard'))
@@ -249,7 +269,8 @@ def admin_edit(id_produto=None):
 
 @app.route("/admin/delete/<id_produto>", methods=['POST'])
 def admin_delete(id_produto):
-    if not session.get('admin_logged_in'): return redirect(url_for('admin_login'))
+    if not session.get('admin_logged_in'):
+        return redirect(url_for('admin_login'))
     database.delete_produto(id_produto)
     flash("Produto removido!")
     return redirect(url_for('admin_dashboard'))

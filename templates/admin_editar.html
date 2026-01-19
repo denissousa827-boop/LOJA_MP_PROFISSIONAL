@@ -10,9 +10,10 @@
         h2 { border-bottom: 2px solid #007bff; padding-bottom: 10px; color: #333; }
         h3 { margin-top: 25px; color: #444; border-left: 4px solid #007bff; padding-left: 10px; }
         label { display: block; margin-top: 15px; font-weight: bold; color: #444; }
-        input[type="text"], input[type="number"], textarea, input[type="file"], input[type="datetime-local"] {
+        input[type="text"], input[type="number"], textarea, input[type="file"], input[type="datetime-local"], select {
             width: 100%; padding: 12px; margin-top: 5px; box-sizing: border-box;
             border: 1px solid #ddd; border-radius: 8px; font-size: 16px;
+            background-color: white;
         }
         .oferta-box {
             border: 2px dashed #ff4757; padding: 20px; margin: 25px 0;
@@ -44,6 +45,19 @@
 
             <label for="nome">Nome do Produto:</label>
             <input type="text" id="nome" name="nome" value="{{ produto.nome if produto else '' }}" required>
+
+            <label for="categoria">Categoria do Produto:</label>
+            <select id="categoria" name="categoria" required>
+                <option value="" disabled {% if not produto %}selected{% endif %}>Selecione uma categoria</option>
+                <option value="Celulares" {% if produto and produto.categoria == 'Celulares' %}selected{% endif %}>Celulares</option>
+                <option value="Brinquedos" {% if produto and produto.categoria == 'Brinquedos' %}selected{% endif %}>Brinquedos</option>
+                <option value="Roupas" {% if produto and produto.categoria == 'Roupas' %}selected{% endif %}>Moda / Roupas</option>
+                <option value="Eletro" {% if produto and produto.categoria == 'Eletro' %}selected{% endif %}>Eletro / Cozinha</option>
+                <option value="Beleza" {% if produto and produto.categoria == 'Beleza' %}selected{% endif %}>Beleza / Saúde</option>
+                <option value="Games" {% if produto and produto.categoria == 'Games' %}selected{% endif %}>Games</option>
+                <option value="Ferramentas" {% if produto and produto.categoria == 'Ferramentas' %}selected{% endif %}>Ferramentas / Oficina</option>
+                <option value="Casa" {% if produto and produto.categoria == 'Casa' %}selected{% endif %}>Casa / Decoração</option>
+            </select>
 
             <label for="preco">Preço de Venda (R$):</label>
             <input type="number" id="preco" name="preco" step="0.01" value="{{ produto.preco if produto else '' }}" required>
