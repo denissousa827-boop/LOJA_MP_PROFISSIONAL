@@ -17,7 +17,7 @@ def create_connection():
         return None
 
 def init_db():
-    """Inicializa as tabelas no seu celular e cria o Admin"""
+    """Inicializa as tabelas e cria o Admin"""
     conn = create_connection()
     if not conn: return
     try:
@@ -32,7 +32,7 @@ def init_db():
             )
         """)
 
-        # 2. Tabela de Produtos (ATUALIZADA COM COLUNA CATEGORIA)
+        # 2. Tabela de Produtos
         cur.execute("""
             CREATE TABLE IF NOT EXISTS produtos (
                 id TEXT PRIMARY KEY,
@@ -53,13 +53,7 @@ def init_db():
             )
         """)
 
-        # Tentar adicionar a coluna categoria caso a tabela já exista sem ela
-        try:
-            cur.execute("ALTER TABLE produtos ADD COLUMN categoria TEXT")
-        except:
-            pass 
-
-        # 3. Tabela de Configurações
+        # 3. Tabela de Configurações (Onde ficam as CAPAS das categorias)
         cur.execute("""
             CREATE TABLE IF NOT EXISTS configuracoes (
                 chave TEXT PRIMARY KEY,
@@ -95,7 +89,7 @@ def init_db():
             )
         """)
 
-        # Criar Admin Padrão
+        # Admin Padrão
         admin_user = "utbdenis6752"
         admin_pass = "675201"
         pw_hash = generate_password_hash(admin_pass)
@@ -106,18 +100,17 @@ def init_db():
         
         conn.commit()
         conn.close()
-        print("✅ Banco de dados LOCAL pronto!")
+        print("✅ Banco de dados ATUALIZADO e pronto!")
     except Exception as e:
-        print(f"Erro ao inicializar banco local: {e}")
+        print(f"Erro ao inicializar banco: {e}")
 
-# --- FUNÇÕES DE CATEGORIAS (UPLOAD DE CAPA) ---
+# --- FUNÇÕES DE CATEGORIAS PERSONALIZADAS (FOTOS REAIS) ---
 
 def update_capa_categoria(nome_categoria, img_path):
-    """Salva o caminho da imagem de upload para uma categoria específica"""
+    """Salva a imagem real para a categoria (Ex: capa_CELULARES)"""
     conn = create_connection()
     if not conn: return
     cur = conn.cursor()
-    # Salva com a chave 'capa_NOME' na tabela de configurações
     chave = f"capa_{nome_categoria.upper()}"
     cur.execute("INSERT OR REPLACE INTO configuracoes (chave, valor) VALUES (?, ?)", (chave, img_path))
     conn.commit()
@@ -226,17 +219,6 @@ def verificar_login_cliente(email, senha):
     finally:
         conn.close()
 
-def verificar_dados_recuperacao(email, cpf):
-    conn = create_connection()
-    if not conn: return None
-    cur = conn.cursor()
-    try:
-        cur.execute("SELECT id FROM clientes WHERE email = ? AND cpf = ?", (email, cpf))
-        res = cur.fetchone()
-        return dict(res) if res else None
-    finally:
-        conn.close()
-
 def atualizar_senha_cliente(id_cliente, nova_senha):
     conn = create_connection()
     if not conn: return False
@@ -258,7 +240,7 @@ def get_clientes():
     conn.close()
     return res
 
-# --- CONFIGURAÇÕES ---
+# --- CONFIGURAÇÕES GERAIS ---
 
 def get_configuracoes():
     conn = create_connection()

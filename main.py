@@ -15,14 +15,18 @@ app.secret_key = 'chave_ultra_secreta_denis'
 IS_VERCEL = "VERCEL" in os.environ
 if IS_VERCEL:
     UPLOAD_FOLDER = '/tmp'
+    UPLOAD_FOLDER_CAT = '/tmp'
 else:
     UPLOAD_FOLDER = 'static/uploads'
+    UPLOAD_FOLDER_CAT = 'static/uploads/categorias'
 
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'mp4'}
 
+# Criação das pastas de upload se não estiver no Vercel
 if not IS_VERCEL:
     os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+    os.makedirs(UPLOAD_FOLDER_CAT, exist_ok=True)
 
 with app.app_context():
     database.init_db()
@@ -45,7 +49,6 @@ def homepage():
     config, banner_pagamento = load_shop_config()
     return render_template("homepage.html", produtos=produtos, ofertas=ofertas, config=config, banner_pagamento=banner_pagamento)
 
-# --- NOVA ROTA DE PESQUISA ADICIONADA ---
 @app.route("/pesquisar")
 def pesquisar():
     query = request.args.get('q', '')
@@ -54,7 +57,6 @@ def pesquisar():
     
     produtos_encontrados = []
     if query:
-        # Filtra os produtos pelo nome ou descrição (insensível a maiúsculas/minúsculas)
         query = query.lower()
         for p in todos_produtos:
             nome = p.get('nome', '').lower()
@@ -64,7 +66,6 @@ def pesquisar():
     
     return render_template("pesquisa.html", produtos=produtos_encontrados, query=query, config=config, banner_pagamento=banner_pagamento)
 
-# --- ROTA DE CATEGORIAS ATUALIZADA ---
 @app.route("/categoria/<nome_categoria>")
 def categoria(nome_categoria):
     config, banner_pagamento = load_shop_config()
@@ -74,11 +75,9 @@ def categoria(nome_categoria):
     cat_search = nome_categoria.lower()
     
     for p in todos_produtos:
-        # Primeiro verifica se existe o campo categoria salvo no banco de dados
         categoria_prod = str(p.get('categoria', '')).lower()
         descricao_prod = str(p.get('descricao', '')).lower()
         
-        # Se a categoria bater exatamente ou se estiver na descrição (como backup)
         if cat_search == categoria_prod or cat_search in descricao_prod:
             produtos_categoria.append(p)
             
@@ -228,7 +227,29 @@ def admin_configuracoes():
     config, _ = load_shop_config()
     return render_template("admin_configuracoes.html", config=config)
 
-# --- GERENCIAMENTO DE PRODUTOS ATUALIZADO ---
+# --- NOVA ROTA: UPLOAD DE CAPA DE CATEGORIA ---
+@app.route('/admin/upload_capa_cat', methods=['POST'])
+def admin_upload_capa_cat():
+    if not session.get('admin_logged_in'):
+        return redirect(url_for('admin_login'))
+    
+    categoria = request.form.get('categoria')
+    file = request.files.get('imagem_capa')
+    
+    if file and categoria:
+        filename = secure_filename(f"capa_{categoria.lower()}.png")
+        # Caminho absoluto para salvar
+        save_path = os.path.join(UPLOAD_FOLDER_CAT, filename)
+        file.save(save_path)
+        
+        # Caminho relativo para o banco de dados
+        db_path = f"uploads/categorias/{filename}"
+        database.update_capa_categoria(categoria, db_path)
+        flash(f'Capa de {categoria} atualizada com sucesso!', 'success')
+    
+    return redirect(url_for('admin_dashboard'))
+
+# --- GERENCIAMENTO DE PRODUTOS ---
 @app.route("/admin/edit", methods=['GET', 'POST'])
 @app.route("/admin/edit/<id_produto>", methods=['GET', 'POST'])
 def admin_edit(id_produto=None):
@@ -240,7 +261,7 @@ def admin_edit(id_produto=None):
             dados = {
                 'id': id_produto or request.form.get('id'),
                 'nome': request.form.get('nome'),
-                'categoria': request.form.get('categoria'), # NOVA LINHA PARA CATEGORIA
+                'categoria': request.form.get('categoria'),
                 'preco': to_f(request.form.get('preco')),
                 'descricao': request.form.get('descricao'),
                 'em_oferta': 'em_oferta' in request.form,
@@ -271,7 +292,7 @@ def admin_edit(id_produto=None):
 def admin_delete(id_produto):
     if not session.get('admin_logged_in'):
         return redirect(url_for('admin_login'))
-    database.delete_produto(id_produto)
+    database.excluir_produto(id_produto)
     flash("Produto removido!")
     return redirect(url_for('admin_dashboard'))
 

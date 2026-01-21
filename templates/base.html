@@ -129,81 +129,6 @@
             font-size: 0.85em;
         }
 
-        /* --- SEÇÃO DE CATEGORIAS PROFISSIONAL --- */
-        .categories-container {
-            background: white;
-            padding: 20px 0;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
-            margin-bottom: 20px;
-            overflow-x: auto; /* Permite scroll lateral no mobile */
-            white-space: nowrap;
-        }
-
-        .categories-list {
-            display: flex;
-            justify-content: center;
-            align-items: flex-start;
-            gap: 30px;
-            list-style: none;
-            padding: 0;
-            margin: 0;
-        }
-
-        .category-item {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            text-decoration: none;
-            transition: transform 0.3s ease;
-            width: 80px; /* Tamanho fixo para alinhar */
-        }
-
-        .category-item:hover {
-            transform: translateY(-5px);
-        }
-
-        .category-image {
-            width: 60px;
-            height: 60px;
-            background: #f0f0f0;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin-bottom: 8px;
-            border: 2px solid transparent;
-            transition: 0.3s;
-            overflow: hidden;
-        }
-
-        .category-item:hover .category-image {
-            border-color: var(--primary-color);
-            box-shadow: 0 0 15px rgba(209, 0, 36, 0.2);
-        }
-
-        .category-image img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
-
-        .category-image i {
-            font-size: 24px;
-            color: #666;
-        }
-
-        .category-name {
-            font-size: 11px;
-            font-weight: 600;
-            color: #444;
-            text-transform: uppercase;
-            text-align: center;
-            white-space: normal;
-        }
-
-        /* Esconde scrollbar mas mantém funcionalidade */
-        .categories-container::-webkit-scrollbar { display: none; }
-
         /* Rodapé */
         footer {
             background-color: var(--footer-bg);
@@ -240,7 +165,6 @@
             nav { flex-wrap: wrap; justify-content: center; }
             .user-area { margin-left: 0; margin-top: 10px; }
             nav a { margin: 5px 10px; }
-            .categories-list { justify-content: flex-start; padding-left: 20px; gap: 20px; }
         }
     </style>
 </head>
@@ -286,44 +210,6 @@
     </header>
 
     <main>
-        <section class="categories-container">
-            <div class="container">
-                <div class="categories-list">
-                    
-                    <a href="/categoria/Celulares" class="category-item">
-                        <div class="category-image"><img src="https://cdn-icons-png.flaticon.com/512/644/644458.png" alt="Celulares"></div>
-                        <span class="category-name">Celulares</span>
-                    </a>
-
-                    <a href="/categoria/Brinquedos" class="category-item">
-                        <div class="category-image"><img src="https://cdn-icons-png.flaticon.com/512/3082/3082060.png" alt="Brinquedos"></div>
-                        <span class="category-name">Brinquedos</span>
-                    </a>
-
-                    <a href="/categoria/Roupas" class="category-item">
-                        <div class="category-image"><img src="https://cdn-icons-png.flaticon.com/512/3159/3159614.png" alt="Moda"></div>
-                        <span class="category-name">Moda</span>
-                    </a>
-
-                    <a href="/categoria/Casa" class="category-item">
-                        <div class="category-image"><img src="https://cdn-icons-png.flaticon.com/512/1216/1216641.png" alt="Casa"></div>
-                        <span class="category-name">Casa</span>
-                    </a>
-
-                    <a href="/categoria/Saude" class="category-item">
-                        <div class="category-image"><img src="https://cdn-icons-png.flaticon.com/512/2966/2966327.png" alt="Saúde"></div>
-                        <span class="category-name">Saúde</span>
-                    </a>
-
-                    <a href="/categoria/Games" class="category-item">
-                        <div class="category-image"><img src="https://cdn-icons-png.flaticon.com/512/3408/3408506.png" alt="Games"></div>
-                        <span class="category-name">Games</span>
-                    </a>
-
-                </div>
-            </div>
-        </section>
-
         {% block content %}{% endblock %}
     </main>
 

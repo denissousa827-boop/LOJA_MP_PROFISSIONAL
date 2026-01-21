@@ -32,6 +32,7 @@
         }
         button[type="submit"]:hover { background-color: #26af5f; transform: scale(1.01); }
         .current-file { font-size: 12px; color: #666; margin-top: 5px; background: #eee; padding: 4px; border-radius: 4px; }
+        .hint { font-size: 0.85em; color: #666; font-weight: normal; }
     </style>
 </head>
 <body>
@@ -46,18 +47,16 @@
             <label for="nome">Nome do Produto:</label>
             <input type="text" id="nome" name="nome" value="{{ produto.nome if produto else '' }}" required>
 
-            <label for="categoria">Categoria do Produto:</label>
-            <select id="categoria" name="categoria" required>
-                <option value="" disabled {% if not produto %}selected{% endif %}>Selecione uma categoria</option>
-                <option value="Celulares" {% if produto and produto.categoria == 'Celulares' %}selected{% endif %}>Celulares</option>
-                <option value="Brinquedos" {% if produto and produto.categoria == 'Brinquedos' %}selected{% endif %}>Brinquedos</option>
-                <option value="Roupas" {% if produto and produto.categoria == 'Roupas' %}selected{% endif %}>Moda / Roupas</option>
-                <option value="Eletro" {% if produto and produto.categoria == 'Eletro' %}selected{% endif %}>Eletro / Cozinha</option>
-                <option value="Beleza" {% if produto and produto.categoria == 'Beleza' %}selected{% endif %}>Beleza / Saúde</option>
-                <option value="Games" {% if produto and produto.categoria == 'Games' %}selected{% endif %}>Games</option>
-                <option value="Ferramentas" {% if produto and produto.categoria == 'Ferramentas' %}selected{% endif %}>Ferramentas / Oficina</option>
-                <option value="Casa" {% if produto and produto.categoria == 'Casa' %}selected{% endif %}>Casa / Decoração</option>
-            </select>
+            <label for="categoria">Categoria do Produto: <span class="hint">(Ex: CELULARES, MODA, BRINQUEDOS)</span></label>
+            <input type="text" id="categoria" name="categoria" list="lista-categorias" value="{{ produto.categoria if produto else '' }}" placeholder="Digite ou selecione uma categoria" required>
+            <datalist id="lista-categorias">
+                <option value="CELULARES">
+                <option value="BRINQUEDOS">
+                <option value="MODA">
+                <option value="CASA">
+                <option value="SAUDE">
+                <option value="GAMES">
+            </datalist>
 
             <label for="preco">Preço de Venda (R$):</label>
             <input type="number" id="preco" name="preco" step="0.01" value="{{ produto.preco if produto else '' }}" required>
@@ -85,7 +84,7 @@
                     </div>
                     <div>
                         <label for="prazo_entrega">Prazo de Entrega (Texto):</label>
-                        <input type="text" id="prazo_entrega" name="prazo_entrega" value="{{ produto.prazo_entrega if produto else '7 e 12/jan' }}" placeholder="Ex: 5 a 10 dias">
+                        <input type="text" id="prazo_entrega" name="prazo_entrega" value="{{ produto.prazo_entrega if produto else '7 e 12 dias' }}" placeholder="Ex: 5 a 10 dias">
                     </div>
                 </div>
 
@@ -114,7 +113,7 @@
                     <div>
                         <label>Imagem {{ i }}:</label>
                         {% if produto and produto[field] %}
-                            <div class="current-file">📁 {{ produto[field].split('/')[-1] }}</div>
+                            <div class="current-file">📁 Já existe imagem cadastrada</div>
                         {% endif %}
                         <input type="file" name="imagem_{{ i }}" accept="image/*">
                     </div>
@@ -123,7 +122,7 @@
 
             <label>Vídeo Demonstrativo:</label>
             {% if produto and produto.video_path %}
-                <div class="current-file">🎥 {{ produto.video_path.split('/')[-1] }}</div>
+                <div class="current-file">🎥 Já existe vídeo cadastrado</div>
             {% endif %}
             <input type="file" name="video" accept="video/*">
 

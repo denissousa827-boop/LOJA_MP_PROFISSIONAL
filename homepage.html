@@ -47,53 +47,7 @@
         .banner-container { height: 350px; }
     }
 
-    /* 3. SEÇÃO DE CATEGORIAS (NOVO) */
-    .cat-grid {
-        display: grid;
-        grid-template-columns: repeat(3, 1fr);
-        gap: 12px;
-        margin-bottom: 35px;
-    }
-
-    @media (min-width: 768px) {
-        .cat-grid { grid-template-columns: repeat(6, 1fr); gap: 20px; }
-    }
-
-    .cat-item {
-        text-decoration: none;
-        text-align: center;
-        transition: transform 0.3s;
-    }
-
-    .cat-item:hover { transform: scale(1.05); }
-
-    .cat-img-box {
-        width: 100%;
-        aspect-ratio: 1/1;
-        border-radius: 50%; /* Formato circular estilo Instagram */
-        overflow: hidden;
-        border: 2px solid #eee;
-        margin-bottom: 8px;
-        background: #f8f9fa;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-    }
-
-    .cat-img-box img {
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
-    }
-
-    .cat-item span {
-        font-size: 12px;
-        font-weight: bold;
-        color: #333;
-        text-transform: uppercase;
-    }
-
-    /* 4. Estilos de Cards e Ofertas */
+    /* 3. Estilos de Cards e Ofertas */
     .card-oferta {
         background: white; 
         padding: 15px; 
@@ -118,25 +72,6 @@
         <img src="{{ config.banner_principal }}" alt="Banner Promocional">
     </div>
     {% endif %}
-
-    <div class="cat-grid">
-        {% set lista_cats = ['CELULARES', 'BRINQUEDOS', 'MODA', 'CASA', 'SAUDE', 'GAMES'] %}
-        {% for cat in lista_cats %}
-        <a href="{{ url_for('categoria', nome_categoria=cat.lower()) }}" class="cat-item">
-            <div class="cat-img-box">
-                {% set chave_capa = 'capa_' + cat %}
-                {% if config.get(chave_capa) %}
-                    <img src="{{ url_for('static', filename=config.get(chave_capa)) }}" alt="{{ cat }}">
-                {% else %}
-                    <div style="background: #181818; color: white; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; font-size: 10px; padding: 5px;">
-                        {{ cat }}
-                    </div>
-                {% endif %}
-            </div>
-            <span>{{ cat }}</span>
-        </a>
-        {% endfor %}
-    </div>
 
     {% if ofertas %}
     <div style="margin-top: 20px; margin-bottom: 20px;">

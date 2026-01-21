@@ -43,6 +43,30 @@
     </div>
 
     <div style="background: white; padding: 30px; border-radius: 15px; box-shadow: 0 4px 20px rgba(0,0,0,0.05); margin-bottom: 40px;">
+        <h3 style="margin-bottom: 25px; color: #1a1a1a;"><i class="fas fa-image" style="color: #ffa502;"></i> Capas das Categorias (Upload)</h3>
+        
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px;">
+            {% set categorias = ['CELULARES', 'BRINQUEDOS', 'MODA', 'CASA', 'SAUDE', 'GAMES'] %}
+            {% for cat in categorias %}
+            <div style="background: #f8f9fa; padding: 20px; border-radius: 10px; border: 1px solid #eee; text-align: center;">
+                <span style="font-weight: bold; display: block; margin-bottom: 15px; color: #333;">{{ cat }}</span>
+                
+                <form action="{{ url_for('admin_upload_capa_cat') }}" method="POST" enctype="multipart/form-data">
+                    <input type="hidden" name="categoria" value="{{ cat }}">
+                    
+                    <label for="file_{{ cat }}" style="cursor: pointer; background: #2ed573; color: white; padding: 10px 15px; border-radius: 6px; font-size: 14px; display: inline-block; font-weight: 600;">
+                        <i class="fas fa-upload"></i> Alterar Capa
+                    </label>
+                    <input type="file" id="file_{{ cat }}" name="imagem_capa" style="display: none;" onchange="this.form.submit()">
+                </form>
+                
+                <small style="display: block; margin-top: 10px; color: #888;">Envie JPG ou PNG</small>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <div style="background: white; padding: 30px; border-radius: 15px; box-shadow: 0 4px 20px rgba(0,0,0,0.05); margin-bottom: 40px;">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px;">
             <h3 style="margin: 0;"><i class="fas fa-boxes" style="color: #70a1ff;"></i> Catálogo de Produtos</h3>
             <a href="{{ url_for('admin_edit') }}" style="text-decoration: none; background: #2ed573; color: white; border: none; padding: 12px 25px; border-radius: 8px; font-weight: bold; cursor: pointer;">
