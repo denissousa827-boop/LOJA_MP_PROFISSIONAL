@@ -16,155 +16,70 @@
         }
 
         body {
-            margin: 0;
-            padding: 0;
+            margin: 0; padding: 0;
             font-family: 'Poppins', sans-serif;
-            background-color: #f5f5f5;
-            color: #333;
+            background-color: #f5f5f5; color: #333;
         }
 
-        /* --- CORREÇÃO PARA O TEXTO AZUL INDESEJADO --- */
+        /* Limpeza de elementos residuais */
         .user-menu-mobile, .mobile-user-link, [href*="cliente/login"]:not(nav *) {
             display: none !important;
         }
 
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 0 15px;
-        }
+        .container { max-width: 1200px; margin: 0 auto; padding: 0 15px; }
 
-        /* Cabeçalho Dinâmico */
+        /* Cabeçalho */
         header {
             background-color: var(--header-bg);
-            padding: 15px 0;
-            color: white;
+            padding: 15px 0; color: white;
             box-shadow: 0 2px 5px rgba(0,0,0,0.2);
         }
 
-        .header-content {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            gap: 20px;
+        .header-content { display: flex; justify-content: space-between; align-items: center; gap: 20px; }
+
+        /* Logo - Forçando visibilidade */
+        .logo { text-decoration: none; display: flex; align-items: center; }
+        .logo img { max-height: 50px; display: block; }
+        .logo-text { 
+            font-size: 24px; 
+            font-weight: 700; 
+            color: #ffffff !important; /* Cor branca forçada */
+            text-transform: uppercase;
+            letter-spacing: 1px;
         }
 
-        /* --- ESTILO DA BARRA DE PESQUISA --- */
+        /* Busca */
         .search-bar {
-            flex: 1;
-            max-width: 500px;
-            display: flex;
-            background: white;
-            border-radius: 4px;
-            overflow: hidden;
+            flex: 1; max-width: 500px; display: flex;
+            background: white; border-radius: 4px; overflow: hidden;
         }
+        .search-bar input { flex: 1; border: none; padding: 10px 15px; outline: none; font-family: 'Poppins', sans-serif; }
+        .search-bar button { background: white; border: none; padding: 0 15px; color: #333; cursor: pointer; border-left: 1px solid #eee; }
 
-        .search-bar input {
-            flex: 1;
-            border: none;
-            padding: 10px 15px;
-            outline: none;
-            font-family: 'Poppins', sans-serif;
-        }
+        /* Navegação */
+        nav { display: flex; align-items: center; }
+        nav a { color: white; text-decoration: none; margin-left: 20px; font-weight: 500; transition: 0.3s; }
+        nav a:hover { color: var(--primary-color); }
 
-        .search-bar button {
-            background: white;
-            border: none;
-            padding: 0 15px;
-            color: #333;
-            cursor: pointer;
-            transition: 0.3s;
-            border-left: 1px solid #eee;
-        }
-
-        .search-bar button:hover {
-            color: var(--primary-color);
-        }
-
-        .logo img {
-            max-height: 50px;
-            display: block;
-        }
-
-        .logo-text {
-            font-size: 24px;
-            font-weight: bold;
-            text-decoration: none;
-            color: white;
-            white-space: nowrap;
-        }
-
-        nav {
-            display: flex;
-            align-items: center;
-        }
-
-        nav a {
-            color: white;
-            text-decoration: none;
-            margin-left: 20px;
-            font-weight: 500;
-            transition: 0.3s;
-            white-space: nowrap;
-        }
-
-        nav a:hover {
-            color: var(--primary-color);
-        }
-
-        /* Área do Cliente Profissional */
         .user-area {
-            background: rgba(255,255,255,0.1);
-            padding: 8px 15px;
-            border-radius: 50px;
-            margin-left: 20px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            font-size: 0.9em;
-        }
-
-        .user-area a {
-            margin-left: 5px;
-            font-size: 0.85em;
+            background: rgba(255,255,255,0.1); padding: 8px 18px;
+            border-radius: 50px; margin-left: 20px; display: flex; align-items: center; gap: 10px; font-size: 0.9em;
         }
 
         /* Rodapé */
-        footer {
-            background-color: var(--footer-bg);
-            color: white;
-            padding: 40px 0;
-            margin-top: 50px;
-        }
+        footer { background-color: var(--footer-bg); color: white; padding: 40px 0; margin-top: 50px; }
+        .footer-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 30px; }
+        .footer-section h4 { border-bottom: 2px solid var(--primary-color); padding-bottom: 10px; margin-bottom: 20px; font-size: 1.1em; }
+        .footer-section p, .footer-section a { color: #bbb; text-decoration: none; font-size: 0.9em; margin-bottom: 10px; display: block; }
+        .footer-section a:hover { color: white; }
 
-        .footer-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 30px;
-        }
+        .flash-messages { padding: 15px; text-align: center; background: #d4edda; color: #155724; border-bottom: 1px solid #c3e6cb; }
 
-        .footer-section h4 {
-            border-bottom: 2px solid var(--primary-color);
-            padding-bottom: 10px;
-            margin-bottom: 20px;
-        }
-
-        /* Flash Messages */
-        .flash-messages {
-            padding: 15px;
-            text-align: center;
-            background: #d4edda;
-            color: #155724;
-            border-bottom: 1px solid #c3e6cb;
-        }
-
-        /* Ajustes para Mobile */
         @media (max-width: 800px) {
-            .header-content { flex-direction: column; gap: 15px; text-align: center; }
-            .search-bar { width: 100%; max-width: 100%; order: 3; }
-            nav { flex-wrap: wrap; justify-content: center; }
+            .header-content { flex-direction: column; text-align: center; }
+            .search-bar { width: 100%; order: 3; }
+            nav { justify-content: center; flex-wrap: wrap; }
             .user-area { margin-left: 0; margin-top: 10px; }
-            nav a { margin: 5px 10px; }
         }
     </style>
 </head>
@@ -182,7 +97,7 @@
         <div class="container header-content">
             <a href="/" class="logo">
                 {% if config.get('logo_img') %}
-                    <img src="{{ config.get('logo_img') }}" alt="Logo {{ config.get('titulo_site') }}">
+                    <img src="{{ config.get('logo_img') }}" alt="Logo">
                 {% else %}
                     <span class="logo-text">{{ config.get('titulo_site', 'LOJA ONLINE') }}</span>
                 {% endif %}
@@ -195,12 +110,11 @@
             
             <nav>
                 <a href="/"><i class="fas fa-home"></i> Início</a>
-                
                 <div class="user-area">
                     {% if session.get('cliente_nome') %}
                         <span>Olá, <strong>{{ session['cliente_nome'].split()[0] }}</strong></span>
                         <a href="/meus-pedidos" style="color: #fff; text-decoration: underline;">Pedidos</a>
-                        <a href="{{ url_for('cliente_logout') }}" style="color: #ff4757; font-weight: bold;"><i class="fas fa-sign-out-alt"></i></a>
+                        <a href="{{ url_for('cliente_logout') }}" style="color: #ff4757; font-weight: bold; margin-left: 10px;"><i class="fas fa-sign-out-alt"></i></a>
                     {% else %}
                         <a href="{{ url_for('cliente_login') }}"><i class="fas fa-user"></i> Entrar / Cadastrar</a>
                     {% endif %}
@@ -217,17 +131,26 @@
         <div class="container footer-grid">
             <div class="footer-section">
                 <h4>Sobre Nós</h4>
-                <p>{{ config.get('titulo_site', 'Nossa Loja') }} - Os melhores produtos com entrega rápida e segura.</p>
+                <p>{{ config.get('titulo_site', 'Nossa Loja') }} - Qualidade e confiança em cada compra.</p>
             </div>
+
+            <div class="footer-section">
+                <h4>Institucional</h4>
+                <a href="/termos-e-privacidade">Política de Privacidade</a>
+                <a href="/termos-e-privacidade">Termos de Uso</a>
+                <a href="/termos-e-privacidade">Trocas e Devoluções</a>
+            </div>
+
             <div class="footer-section">
                 <h4>Contato</h4>
                 <p><i class="fas fa-envelope"></i> {{ config.get('contato_email', 'contato@email.com') }}</p>
                 <p><i class="fab fa-whatsapp"></i> {{ config.get('contato_whatsapp', 'WhatsApp') }}</p>
             </div>
+
             <div class="footer-section">
-                <h4>Pagamento Seguro</h4>
-                <p>Processado por Mercado Pago</p>
-                <div style="font-size: 24px; gap: 10px; display: flex;">
+                <h4>Pagamento</h4>
+                <p>Ambiente 100% Seguro</p>
+                <div style="font-size: 22px; gap: 10px; display: flex; color: #fff;">
                     <i class="fab fa-cc-visa"></i>
                     <i class="fab fa-cc-mastercard"></i>
                     <i class="fas fa-barcode"></i>
@@ -235,8 +158,8 @@
                 </div>
             </div>
         </div>
-        <div style="text-align: center; margin-top: 30px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 20px;">
-            &copy; 2024 {{ config.get('titulo_site') }} - Todos os direitos reservados.
+        <div style="text-align: center; margin-top: 30px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 20px; font-size: 0.8em; color: #888;">
+            &copy; 2026 {{ config.get('titulo_site') }} - Todos os direitos reservados.
         </div>
     </footer>
 

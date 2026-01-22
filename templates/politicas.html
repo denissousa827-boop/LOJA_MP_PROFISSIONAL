@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %}Políticas e Termos - {{ config.get('titulo_site') }}{% endblock %}
+
+{% block content %}
+<div class="container" style="padding: 40px 15px; background: white; border-radius: 8px; margin-top: 20px; line-height: 1.6;">
+    <h1 style="color: var(--primary-color);">Termos e Privacidade</h1>
+    <hr>
+
+    <h3>1. Segurança dos Dados</h3>
+    <p>Nós coletamos apenas as informações necessárias para processar seu pedido (Nome, CPF, Endereço e E-mail). Seus dados nunca serão compartilhados com terceiros, exceto para fins de logística (correios/transportadoras).</p>
+
+    <h3>2. Pagamentos Seguros</h3>
+    <p>Todos os pagamentos são processados via <strong>Mercado Pago</strong>. Nossa loja não armazena dados de cartão de crédito ou senhas bancárias. O ambiente de pagamento é criptografado e seguro.</p>
+
+    <h3>3. Prazo de Entrega</h3>
+    <p>O prazo de entrega começa a contar a partir da confirmação do pagamento. Você receberá um código de rastreio para acompanhar seu pedido.</p>
+
+    <h3>4. Trocas e Devoluções</h3>
+    <p>Conforme o Código de Defesa do Consumidor, você tem até <strong>7 dias</strong> após o recebimento para solicitar a devolução por arrependimento. O produto deve estar na embalagem original e sem marcas de uso.</p>
+
+    <h3>5. Responsabilidade do Cliente</h3>
+    <p>O cliente é responsável por fornecer o endereço correto. Caso o produto retorne por endereço insuficiente, um novo frete poderá ser cobrado.</p>
+</div>
+{% endblock %}
