@@ -1,152 +1,164 @@
 {% extends "base.html" %}
 
-{% block title %}{{ produto.nome }} | {{ config.get('titulo_site', 'Loja Oficial') }}{% endblock %}
+{% block title %}{{ produto.nome }} | {{ config.get('titulo_site', 'Loja') }}{% endblock %}
 
 {% block content %}
 <style>
-    .product-detail-wrapper { 
-        display: flex; 
-        flex-wrap: wrap; 
-        gap: 40px; 
-        margin: 30px auto; 
-        max-width: 1200px; 
+    /* Estilo Profissional de E-Commerce - ORIGINAL */
+    .product-container { 
+        display: grid; 
+        grid-template-columns: 1fr 400px; 
+        gap: 30px; 
+        background: white; 
         padding: 20px; 
-        background: #fff; 
         border-radius: 12px; 
-        box-shadow: 0 4px 20px rgba(0,0,0,0.08); 
+        box-shadow: 0 2px 15px rgba(0,0,0,0.05); 
+        margin-top: 20px;
     }
-    .media-gallery { flex: 1.2; min-width: 300px; }
-    .main-image { 
+    
+    .gallery-area img { 
         width: 100%; 
-        border-radius: 10px; 
-        overflow: hidden; 
-        border: 1px solid #f0f0f0; 
-        background: #f9f9f9; 
+        border-radius: 8px; 
+        object-fit: contain; 
+        max-height: 500px; 
+        background: #fff; 
+    }
+    
+    .info-area { border: 1px solid #eee; padding: 20px; border-radius: 8px; height: fit-content; }
+    
+    .price-tag { font-size: 32px; font-weight: 700; color: #333; margin: 10px 0; }
+    .pix-discount { color: #00a650; font-weight: 600; font-size: 14px; }
+    
+    /* Seletor de Quantidade Estilo ML */
+    .qty-selector { 
+        margin: 20px 0; 
+        padding: 15px; 
+        background: #f5f5f5; 
+        border-radius: 8px; 
+        cursor: pointer; 
+        display: flex; 
+        justify-content: space-between; 
+        align-items: center; 
+        border: 1px solid transparent; 
+        transition: 0.2s; 
+    }
+    .qty-selector:hover { background: #ededed; border-color: #3483fa; }
+
+    /* Botões de Ação */
+    .btn-buy-now { 
+        background: #3483fa; 
+        color: white; 
+        border: none; 
+        width: 100%; 
+        padding: 15px; 
+        border-radius: 6px; 
+        font-weight: 600; 
+        font-size: 16px; 
+        margin-bottom: 10px; 
+        cursor: pointer; 
+        transition: 0.2s; 
+    }
+    .btn-buy-now:hover { background: #2968c8; }
+    
+    .btn-add-cart { 
+        background: rgba(65, 137, 230, 0.1); 
+        color: #3483fa; 
+        border: none; 
+        width: 100%; 
+        padding: 15px; 
+        border-radius: 6px; 
+        font-weight: 600; 
+        font-size: 16px; 
+        cursor: pointer; 
         display: flex; 
         align-items: center; 
         justify-content: center; 
-        min-height: 400px; 
+        gap: 10px; 
+        transition: 0.2s; 
     }
-    .main-image img { max-width: 100%; max-height: 500px; object-fit: contain; transition: 0.3s; }
-    
-    .thumbnails { 
-        display: flex; 
-        gap: 12px; 
-        margin-top: 15px; 
-        overflow-x: auto; 
-        padding-bottom: 10px; 
-    }
-    .thumbnails img { 
-        width: 80px; 
-        height: 80px; 
-        object-fit: cover; 
-        border-radius: 6px; 
-        cursor: pointer; 
-        border: 2px solid #eee; 
-        transition: 0.2s;
-    }
-    .thumbnails img:hover { border-color: #28a745; }
-    
-    .info-side { flex: 1; min-width: 300px; }
-    .product-price { font-size: 2.5rem; font-weight: 800; color: #28a745; margin: 0; }
-    
-    .btn-compra { 
-        display: block; 
-        background: #28a745; 
-        color: #fff; 
-        text-align: center; 
-        padding: 18px; 
-        font-size: 1.4rem; 
-        font-weight: bold; 
-        text-decoration: none; 
-        border-radius: 8px; 
-        text-transform: uppercase; 
-        transition: 0.3s; 
-    }
-    .btn-compra:hover { background: #218838; transform: translateY(-2px); }
-    
-    .video-container { 
-        width: 100%; 
-        margin-top: 40px; 
-        text-align: center; 
-        border-top: 1px solid #eee; 
-        padding-top: 30px; 
-    }
-    .video-container video { max-width: 100%; width: 800px; border-radius: 12px; background: #000; }
+    .btn-add-cart:hover { background: rgba(65, 137, 230, 0.2); }
+
+    .stock-info { font-size: 14px; color: #666; margin-top: 10px; }
+    .stock-highlight { color: #333; font-weight: 600; }
 
     @media (max-width: 768px) {
-        .product-detail-wrapper { flex-direction: column; gap: 20px; }
-        .main-image { min-height: 300px; }
+        .product-container { grid-template-columns: 1fr; }
     }
 </style>
 
 <div class="container">
-    <div class="product-detail-wrapper">
-        <div class="media-gallery">
-            <div class="main-image">
-                {% if imagens and imagens[0] %}
-                    {% set img_url = imagens[0] if imagens[0].startswith('http') else url_for('static', filename='uploads/' + imagens[0].split('/')[-1]) %}
-                    <img id="current-image" src="{{ img_url }}" alt="{{ produto.nome }}">
-                {% else %}
-                    <img id="current-image" src="{{ url_for('static', filename='default-product.jpg') }}">
-                {% endif %}
+    <div class="product-container">
+        <div class="gallery-area">
+            {% if produto.img_path_1 %}
+                <img src="{{ url_for('static', filename='uploads/' + produto.img_path_1.split('/')[-1]) }}" 
+                     alt="{{ produto.nome }}"
+                     onerror="this.src='/static/img/no-image.png'">
+            {% else %}
+                <img src="{{ url_for('static', filename='placeholder.png') }}" alt="Produto sem imagem">
+            {% endif %}
+        </div>
+
+        <div class="info-area">
+            <span style="color: #666; font-size: 12px; text-transform: uppercase;">Novo | +100 vendidos</span>
+            <h1 style="font-size: 22px; margin: 10px 0; line-height: 1.2; color: #1a1a1a;">{{ produto.nome }}</h1>
+            
+            <div class="price-tag">
+                R$ {{ "%.2f"|format(produto.preco)|replace('.', ',') }}
             </div>
             
-            <div class="thumbnails">
-                {% for img_path in imagens %}
-                    {% if img_path %}
-                        {% set src_path = img_path if img_path.startswith('http') else url_for('static', filename='uploads/' + img_path.split('/')[-1]) %}
-                        <img src="{{ src_path }}" onclick="changeMainImage('{{ src_path }}')" alt="Miniatura">
-                    {% endif %}
-                {% endfor %}
-            </div>
-        </div>
-
-        <div class="info-side">
-            <h1 style="margin-top: 0; color: #333;">{{ produto.nome }}</h1>
-            
-            <div class="price-container" style="padding: 20px; background: #fcfcfc; border-radius: 10px; border-left: 5px solid #28a745; margin-bottom: 25px;">
-                {% if produto.em_oferta %}
-                    <small style="text-decoration: line-through; color: #999;">R$ {{ "%.2f"|format(produto.preco)|replace('.', ',') }}</small>
-                    <p class="product-price">R$ {{ "%.2f"|format(produto.novo_preco)|replace('.', ',') }}</p>
-                {% else %}
-                    <p class="product-price">R$ {{ "%.2f"|format(produto.preco)|replace('.', ',') }}</p>
-                {% endif %}
-                <small style="color: #666;"><i class="fa fa-lock"></i> Pagamento seguro via Mercado Pago</small>
+            <div class="pix-discount">
+                <i class="fas fa-bolt"></i> {{ config.get('desconto_pix', '40') }}% OFF no Pix ou Débito Visa
             </div>
 
-            <div class="description-full" style="margin-bottom: 30px; color: #555; line-height: 1.6;">
-                <strong style="display: block; margin-bottom: 10px;">📋 Descrição do Produto:</strong>
-                <div style="white-space: pre-line;">{{ (produto.descricao or "Sem descrição disponível.")|safe }}</div>
+            <p style="color: #00a650; font-size: 14px; margin-top: 15px; font-weight: 600;">
+                <i class="fas fa-truck"></i> FRETE GRÁTIS ACIMA DE R$ 0,00
+            </p>
+            <small style="color: #666;">Receba grátis entre 7 e 12/jan</small>
+
+            <form action="{{ url_for('adicionar_carrinho', id_produto=produto.id) }}" method="POST">
+                <div class="qty-selector" id="open-qty-modal">
+                    <span>Quantidade: <strong id="display-qty">1 unidade</strong></span>
+                    <i class="fas fa-chevron-right" style="color: #3483fa; font-size: 12px;"></i>
+                    <input type="number" id="qty-input" name="quantidade" value="1" min="1" max="99" style="display: none;">
+                </div>
+
+                <div class="stock-info">
+                    Estoque disponível: <span class="stock-highlight">
+                    {% if produto.estoque and produto.estoque > 0 %}
+                        {{ produto.estoque|int }}
+                    {% else %}
+                        0.000 {% endif %}
+                    </span>
+                    <br><small style="color: #00a650; font-weight: bold;">(+50 disponíveis)</small>
+                </div>
+
+                <div style="margin-top: 25px;">
+                    <button type="submit" name="acao" value="comprar" class="btn-buy-now">Comprar agora</button>
+                    <button type="submit" name="acao" value="carrinho" class="btn-add-cart">
+                        <i class="fas fa-cart-plus"></i> Adicionar ao carrinho
+                    </button>
+                </div>
+            </form>
+
+            <div style="margin-top: 20px; border-top: 1px solid #eee; padding-top: 15px;">
+                <p style="font-size: 13px; color: #666; line-height: 1.4;">
+                    <i class="fas fa-shield-alt" style="color: #3483fa;"></i> <strong>Compra Garantida</strong>, receba o produto que está esperando ou devolvemos o dinheiro.
+                </p>
             </div>
-
-            <a href="{{ url_for('checkout', id_produto=produto.id) }}" class="btn-compra">
-                <i class="fa fa-shopping-cart"></i> Comprar Agora
-            </a>
         </div>
-
-        {% if produto.video_path %}
-        <div class="video-container">
-            <h2 style="font-size: 1.5rem; color: #333; margin-bottom: 20px;">🎥 Vídeo Demonstrativo</h2>
-            {% set video_filename = produto.video_path.split('/')[-1] %}
-            <video controls preload="metadata">
-                <source src="{{ url_for('static', filename='uploads/' + video_filename) }}" type="video/mp4">
-                Seu navegador não suporta vídeos.
-            </video>
-        </div>
-        {% endif %}
     </div>
 </div>
 
 <script>
-    function changeMainImage(src) {
-        const mainImg = document.getElementById('current-image');
-        // Adiciona um efeito suave de troca
-        mainImg.style.opacity = '0';
-        setTimeout(() => {
-            mainImg.src = src;
-            mainImg.style.opacity = '1';
-        }, 200);
-    }
+    // Lógica do Seletor de Quantidade
+    document.getElementById('open-qty-modal').addEventListener('click', function() {
+        let atual = document.getElementById('qty-input').value;
+        let val = prompt("Digite a quantidade desejada:", atual);
+        
+        if (val !== null && val > 0) {
+            document.getElementById('qty-input').value = val;
+            document.getElementById('display-qty').innerText = val + (val > 1 ? ' unidades' : ' unidade');
+        }
+    });
 </script>
 {% endblock %}

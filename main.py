@@ -54,7 +54,7 @@ def pesquisar():
     query = request.args.get('q', '')
     config, banner_pagamento = load_shop_config()
     todos_produtos = database.get_produtos()
-    
+
     produtos_encontrados = []
     if query:
         query = query.lower()
@@ -63,24 +63,24 @@ def pesquisar():
             descricao = p.get('descricao', '').lower()
             if query in nome or query in descricao:
                 produtos_encontrados.append(p)
-    
+
     return render_template("pesquisa.html", produtos=produtos_encontrados, query=query, config=config, banner_pagamento=banner_pagamento)
 
 @app.route("/categoria/<nome_categoria>")
 def categoria(nome_categoria):
     config, banner_pagamento = load_shop_config()
     todos_produtos = database.get_produtos()
-    
+
     produtos_categoria = []
     cat_search = nome_categoria.lower()
-    
+
     for p in todos_produtos:
         categoria_prod = str(p.get('categoria', '')).lower()
         descricao_prod = str(p.get('descricao', '')).lower()
-        
+
         if cat_search == categoria_prod or cat_search in descricao_prod:
             produtos_categoria.append(p)
-            
+
     return render_template("pesquisa.html", produtos=produtos_categoria, query=nome_categoria, config=config, banner_pagamento=banner_pagamento)
 
 @app.route("/produto/<id_produto>")
@@ -89,6 +89,7 @@ def produto_detalhes(id_produto):
     if not produto:
         return redirect(url_for('homepage'))
     config, banner_pagamento = load_shop_config()
+    # MANTIDO: Lógica original das 4 imagens/vídeos
     imagens = [produto.get(f'img_path_{i}') for i in range(1, 5) if produto.get(f'img_path_{i}')]
     return render_template("produto_detalhes.html", produto=produto, imagens=imagens, config=config, banner_pagamento=banner_pagamento)
 
@@ -99,6 +100,37 @@ def checkout(id_produto):
         return redirect(url_for('homepage'))
     config, _ = load_shop_config()
     return render_template("checkout.html", produto=produto, config=config)
+
+# --- SISTEMA DE CARRINHO ---
+
+@app.route("/carrinho")
+def exibir_carrinho():
+    config, _ = load_shop_config()
+    carrinho_sessao = session.get('carrinho', {})
+    produtos_no_carrinho = []
+    total_geral = 0
+
+    for id_p, qtd in carrinho_sessao.items():
+        p = database.get_produto_por_id(id_p)
+        if p:
+            preco = float(p['novo_preco'] if p.get('em_oferta') else p['preco'])
+            subtotal = preco * qtd
+            total_geral += subtotal
+            p['quantidade_carrinho'] = qtd
+            p['subtotal'] = subtotal
+            produtos_no_carrinho.append(p)
+
+    return render_template("carrinho.html", produtos=produtos_no_carrinho, total=total_geral, config=config)
+
+@app.route('/remover_carrinho/<id_produto>')
+def remover_carrinho(id_produto):
+    carrinho = session.get('carrinho', {})
+    id_p = str(id_produto)
+    if id_p in carrinho:
+        carrinho.pop(id_p)
+        session.modified = True
+    flash("Item removido do carrinho.")
+    return redirect(url_for('exibir_carrinho'))
 
 # --- SISTEMA DE LOGIN DO CLIENTE ---
 @app.route("/cliente/login", methods=['GET', 'POST'])
@@ -197,7 +229,7 @@ def admin_dashboard():
         return redirect(url_for('admin_login'))
     vendas = database.get_vendas()
     produtos = database.get_produtos()
-    clientes = database.get_clientes() 
+    clientes = database.get_clientes()
     config, _ = load_shop_config()
     return render_template("admin_dashboard.html", vendas=vendas, produtos=produtos, clientes=clientes, config=config)
 
@@ -205,13 +237,13 @@ def admin_dashboard():
 def admin_configuracoes():
     if not session.get('admin_logged_in'):
         return redirect(url_for('admin_login'))
-    
+
     if request.method == 'POST':
         campos = ['titulo_site', 'contato_whatsapp', 'contato_email', 'header_color', 'footer_color', 'mercado_pago_token', 'melhor_envio_token', 'cep_origem']
         for campo in campos:
             valor = request.form.get(campo)
             if valor is not None: database.update_configuracao(campo, valor)
-        
+
         for file_key in ['logo_img', 'banner_principal']:
             file = request.files.get(file_key)
             if file and allowed_file(file.filename):
@@ -223,33 +255,28 @@ def admin_configuracoes():
 
         flash("Configurações atualizadas!")
         return redirect(url_for('admin_dashboard'))
-    
+
     config, _ = load_shop_config()
     return render_template("admin_configuracoes.html", config=config)
 
-# --- NOVA ROTA: UPLOAD DE CAPA DE CATEGORIA ---
 @app.route('/admin/upload_capa_cat', methods=['POST'])
 def admin_upload_capa_cat():
     if not session.get('admin_logged_in'):
         return redirect(url_for('admin_login'))
-    
+
     categoria = request.form.get('categoria')
     file = request.files.get('imagem_capa')
-    
+
     if file and categoria:
         filename = secure_filename(f"capa_{categoria.lower()}.png")
-        # Caminho absoluto para salvar
         save_path = os.path.join(UPLOAD_FOLDER_CAT, filename)
         file.save(save_path)
-        
-        # Caminho relativo para o banco de dados
         db_path = f"uploads/categorias/{filename}"
         database.update_capa_categoria(categoria, db_path)
         flash(f'Capa de {categoria} atualizada com sucesso!', 'success')
-    
+
     return redirect(url_for('admin_dashboard'))
 
-# --- GERENCIAMENTO DE PRODUTOS ---
 @app.route("/admin/edit", methods=['GET', 'POST'])
 @app.route("/admin/edit/<id_produto>", methods=['GET', 'POST'])
 def admin_edit(id_produto=None):
@@ -273,6 +300,7 @@ def admin_edit(id_produto=None):
                 'prazo_entrega': request.form.get('prazo_entrega'),
                 'tempo_preparo': request.form.get('tempo_preparo')
             }
+            # MANTIDO: Lógica de upload das 4 imagens no admin
             for i in range(1, 5):
                 f = request.files.get(f'imagem_{i}')
                 if f and allowed_file(f.filename):
@@ -324,6 +352,31 @@ def processar_pagamento():
 def sucesso():
     config, _ = load_shop_config()
     return render_template("sucesso.html", config=config)
+
+# --- CORREÇÃO: ROTA ADICIONAR AO CARRINHO ---
+@app.route('/adicionar_carrinho/<id_produto>', methods=['POST'])
+def adicionar_carrinho(id_produto):
+    quantidade = int(request.form.get('quantidade', 1))
+    acao = request.form.get('acao') # 'comprar' ou 'carrinho'
+
+    if 'carrinho' not in session:
+        session['carrinho'] = {}
+
+    carrinho = session['carrinho']
+    id_p = str(id_produto)
+
+    if id_p in carrinho:
+        carrinho[id_p] += quantidade
+    else:
+        carrinho[id_p] = quantidade
+
+    session.modified = True
+
+    if acao == 'comprar':
+        return redirect(url_for('checkout', id_produto=id_produto))
+    
+    flash("Produto adicionado ao carrinho!")
+    return redirect(url_for('exibir_carrinho'))
 
 if __name__ == "__main__":
     app.run(host='0.0.0.0', port=5000, debug=True)
