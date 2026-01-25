@@ -1,25 +1,12 @@
 {% extends "base.html" %}
-
 {% block title %}Configurações do System | Admin{% endblock %}
-
 {% block content %}
 <div class="container" style="margin-top: 30px; max-width: 900px; margin-bottom: 50px;">
     <h2 style="margin-bottom: 25px; border-bottom: 2px solid #333; padding-bottom: 10px; color: #1a1a1a;">
         <i class="fas fa-cogs"></i> Configurações da Loja
     </h2>
 
-    {% with messages = get_flashed_messages() %}
-      {% if messages %}
-        {% for message in messages %}
-          <div style="padding: 15px; background-color: #d4edda; color: #155724; border-radius: 5px; margin-bottom: 20px;">
-            {{ message }}
-          </div>
-        {% endfor %}
-      {% endif %}
-    {% endwith %}
-
     <form action="{{ url_for('admin_configuracoes') }}" method="POST" enctype="multipart/form-data" style="background: white; padding: 30px; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
-
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 25px;">
             <div>
                 <h4 style="color: #007bff; border-bottom: 1px solid #eee; padding-bottom: 5px; margin-bottom: 15px;">Visual e Identidade</h4>
@@ -27,25 +14,19 @@
                     <label style="display:block; font-weight:bold;">Título do Site:</label>
                     <input type="text" name="titulo_site" value="{{ config.get('titulo_site', '') }}" style="width: 100%; padding: 10px; border-radius: 5px; border: 1px solid #ccc;">
                 </div>
-                
                 <div style="margin-bottom: 15px;">
                     <label style="display:block; font-weight:bold;">Logo da Loja:</label>
                     <input type="file" name="logo_img" style="width: 100%; margin-bottom: 5px;">
-                    {% if config.get('logo_img') %}
-                        <small style="color: green;">Logo atual: {{ config.get('logo_img') }}</small>
-                    {% endif %}
                 </div>
-
-                <div style="margin-bottom: 15px; padding: 10px; background: #f8f9fa; border-radius: 5px; border: 1px dashed #007bff;">
-                    <label style="display:block; font-weight:bold; color: #007bff;">Banner Principal da Loja:</label>
+                <div style="margin-bottom: 15px;">
+                    <label style="display:block; font-weight:bold;">Banner Principal da Home:</label>
                     <input type="file" name="banner_principal" style="width: 100%; margin-bottom: 5px;">
                     {% if config.get('banner_principal') %}
-                        <small style="color: #666;">Banner ativo encontrado.</small>
+                        <small>Banner atual: {{ config.get('banner_principal') }}</small>
                     {% endif %}
                 </div>
-
                 <div style="margin-bottom: 15px;">
-                    <label style="display:block; font-weight:bold;">Cor do Cabeçalho (Hex):</label>
+                    <label style="display:block; font-weight:bold;">Cor do Cabeçalho:</label>
                     <input type="color" name="header_color" value="{{ config.get('header_color', '#181818') }}" style="width: 100%; height: 40px; border: 1px solid #ccc; cursor: pointer;">
                 </div>
             </div>
@@ -53,15 +34,11 @@
             <div>
                 <h4 style="color: #007bff; border-bottom: 1px solid #eee; padding-bottom: 5px; margin-bottom: 15px;">Contato e Suporte</h4>
                 <div style="margin-bottom: 15px;">
-                    <label style="display:block; font-weight:bold;">WhatsApp (com DDD):</label>
-                    <input type="text" name="contato_whatsapp" value="{{ config.get('contato_whatsapp', '') }}" placeholder="(11) 99999-9999" style="width: 100%; padding: 10px; border-radius: 5px; border: 1px solid #ccc;">
+                    <label style="display:block; font-weight:bold;">WhatsApp:</label>
+                    <input type="text" name="contato_whatsapp" value="{{ config.get('contato_whatsapp', '') }}" style="width: 100%; padding: 10px; border-radius: 5px; border: 1px solid #ccc;">
                 </div>
                 <div style="margin-bottom: 15px;">
-                    <label style="display:block; font-weight:bold;">E-mail de Suporte:</label>
-                    <input type="email" name="contato_email" value="{{ config.get('contato_email', '') }}" style="width: 100%; padding: 10px; border-radius: 5px; border: 1px solid #ccc;">
-                </div>
-                <div style="margin-bottom: 15px;">
-                    <label style="display:block; font-weight:bold;">CEP de Origem (Saída Frete):</label>
+                    <label style="display:block; font-weight:bold;">CEP de Origem:</label>
                     <input type="text" name="cep_origem" value="{{ config.get('cep_origem', '') }}" placeholder="00000-000" style="width: 100%; padding: 10px; border-radius: 5px; border: 1px solid #ccc;">
                 </div>
             </div>
@@ -70,18 +47,16 @@
         <div style="margin-top: 25px; background: #fff4f4; padding: 20px; border-radius: 8px; border: 1px solid #f5c6cb;">
             <h4 style="color: #d10024; margin-top: 0;"><i class="fas fa-key"></i> Chaves de Integração</h4>
             <div style="margin-bottom: 15px;">
-                <label style="display:block; font-weight:bold;">Mercado Pago Access Token:</label>
-                <input type="password" name="mercado_pago_token" value="{{ config.get('mercado_pago_token', '') }}" placeholder="APP_USR-..." style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 5px;">
-                <small style="color: #666;">Essencial para processar pagamentos no checkout.</small>
+                <label style="display:block; font-weight:bold;">Mercado Pago Token:</label>
+                <input type="password" name="mercado_pago_token" value="{{ config.get('mercado_pago_token', '') }}" style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 5px;">
             </div>
             <div style="margin-bottom: 15px;">
-                <label style="display:block; font-weight:bold;">Melhor Envio Token (Bearer):</label>
-                <textarea name="melhor_envio_token" rows="3" placeholder="eyJhbG..." style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 5px; font-family: monospace;">{{ config.get('melhor_envio_token', '') }}</textarea>
-                <small style="color: #666;">Token de longa duração para cálculo automático de frete.</small>
+                <label style="display:block; font-weight:bold;">Melhor Envio Token:</label>
+                <textarea name="melhor_envio_token" rows="3" style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 5px;">{{ config.get('melhor_envio_token', '') }}</textarea>
             </div>
         </div>
 
-        <button type="submit" style="width: 100%; background: #28a745; color: white; padding: 15px; border: none; border-radius: 5px; font-weight: bold; font-size: 16px; margin-top: 20px; cursor: pointer;">
+        <button type="submit" style="width: 100%; background: #28a745; color: white; padding: 15px; border: none; border-radius: 5px; font-weight: bold; margin-top: 20px; cursor: pointer;">
             <i class="fas fa-save"></i> SALVAR TODAS AS CONFIGURAÇÕES
         </button>
     </form>

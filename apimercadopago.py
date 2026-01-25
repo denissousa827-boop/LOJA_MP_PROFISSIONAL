@@ -4,15 +4,15 @@ import database
 
 def gerar_link_pagamento(produto, id_venda, valor_total):
     """
-    Gera o link do Mercado Pago.
-    Busca o token dinamicamente do banco de dados ou ambiente.
+    Gera o link do Mercado Pago configurado para o domínio PythonAnywhere.
+    Busca o token dinamicamente do banco de dados.
     """
     try:
-        # 1. Tenta pegar o token que você salvou nas configurações da loja (Elite)
+        # 1. Busca as configurações no banco de dados
         configs = database.get_configuracoes()
         token_do_banco = configs.get('mercado_pago_token')
         
-        # 2. Se não estiver no banco, tenta pegar da variável de ambiente (Vercel/Termux)
+        # 2. Define o Access Token
         ACCESS_TOKEN = token_do_banco if token_do_banco else os.getenv("ACCESS_TOKEN")
 
         if not ACCESS_TOKEN:
@@ -22,11 +22,9 @@ def gerar_link_pagamento(produto, id_venda, valor_total):
         # Inicializa o SDK
         sdk = mercadopago.SDK(ACCESS_TOKEN)
 
-        # Define a URL base (Se estiver no Termux, o webhook não funcionará externamente 
-        # a menos que use Ngrok, mas o link de pagamento funcionará normal)
-        LINK_EXTERNO = configs.get('titulo_site', 'https://loja-mp-profissional.vercel.app')
-        if not LINK_EXTERNO.startswith("http"):
-            LINK_EXTERNO = "https://loja-mp-profissional.vercel.app"
+        # 3. Configura seu domínio real do PythonAnywhere
+        # O Webhook só funciona com links HTTPS reais como o seu
+        LINK_EXTERNO = "https://denissousa827.pythonanywhere.com"
 
         preference_data = {
             "items": [
@@ -34,28 +32,29 @@ def gerar_link_pagamento(produto, id_venda, valor_total):
                     "id": str(produto.get('id', '000')),
                     "title": f"{produto.get('nome', 'Produto')} + Envio",
                     "quantity": 1,
-                    "unit_price": float(valor_total), # Valor final calculado no main.py
+                    "unit_price": float(valor_total), # Valor total (produto + frete)
                     "currency_id": "BRL"
                 }
             ],
-            "external_reference": str(id_venda), 
+            "external_reference": str(id_venda), # ID que o Webhook usará para achar a venda
             "back_urls": {
                 "success": f"{LINK_EXTERNO}/sucesso",
-                "failure": f"{LINK_EXTERNO}/erro",
-                "pending": f"{LINK_EXTERNO}/erro"
+                "failure": f"{LINK_EXTERNO}/homepage",
+                "pending": f"{LINK_EXTERNO}/homepage"
             },
-            "notification_url": f"{LINK_EXTERNO}/webhook", 
+            # Esta linha abaixo é o "segredo" para a loja aprovar o pagamento sozinha:
+            "notification_url": f"{LINK_EXTERNO}/webhook/mercadopago", 
             "auto_return": "approved",
             "payment_methods": {
-                "installments": 12 # Permite até 12x
+                "installments": 12 
             }
         }
 
-        # Cria a preferência de pagamento
+        # Cria a preferência de pagamento no Mercado Pago
         resultado = sdk.preference().create(preference_data)
         
         if "response" in resultado and "init_point" in resultado["response"]:
-            # Retorna o link para o checkout Pro
+            # Retorna o link (Checkout Pro) para o cliente pagar
             return resultado["response"]["init_point"]
         else:
             print("Erro detalhado do MP:", resultado)

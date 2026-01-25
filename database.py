@@ -10,7 +10,7 @@ def create_connection():
     """Cria conexão com o banco de dados local SQLite"""
     try:
         conn = sqlite3.connect(DB_PATH)
-        conn.row_factory = sqlite3.Row 
+        conn.row_factory = sqlite3.Row
         return conn
     except Exception as e:
         print(f"Erro de conexão ao banco local: {e}")
@@ -22,7 +22,7 @@ def init_db():
     if not conn: return
     try:
         cur = conn.cursor()
-        
+
         # 1. Tabela de Usuários (Admin)
         cur.execute("""
             CREATE TABLE IF NOT EXISTS users (
@@ -32,7 +32,7 @@ def init_db():
             )
         """)
 
-        # 2. Tabela de Produtos (ATUALIZADA COM COLUNA CATEGORIA)
+        # 2. Tabela de Produtos
         cur.execute("""
             CREATE TABLE IF NOT EXISTS produtos (
                 id TEXT PRIMARY KEY,
@@ -57,7 +57,7 @@ def init_db():
         try:
             cur.execute("ALTER TABLE produtos ADD COLUMN categoria TEXT")
         except:
-            pass 
+            pass
 
         # 3. Tabela de Configurações
         cur.execute("""
@@ -67,7 +67,7 @@ def init_db():
             )
         """)
 
-        # 4. Tabela de Vendas
+        # 4. Tabela de Vendas (Status: pendente, pago, cancelado)
         cur.execute("""
             CREATE TABLE IF NOT EXISTS vendas (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -99,25 +99,23 @@ def init_db():
         admin_user = "utbdenis6752"
         admin_pass = "675201"
         pw_hash = generate_password_hash(admin_pass)
-        
+
         cur.execute("SELECT * FROM users WHERE username = ?", (admin_user,))
         if not cur.fetchone():
             cur.execute("INSERT INTO users (username, password_hash) VALUES (?, ?)", (admin_user, pw_hash))
-        
+
         conn.commit()
         conn.close()
         print("✅ Banco de dados LOCAL pronto!")
     except Exception as e:
         print(f"Erro ao inicializar banco local: {e}")
 
-# --- FUNÇÕES DE CATEGORIAS (UPLOAD DE CAPA) ---
+# --- FUNÇÕES DE CATEGORIAS ---
 
 def update_capa_categoria(nome_categoria, img_path):
-    """Salva o caminho da imagem de upload para uma categoria específica"""
     conn = create_connection()
     if not conn: return
     cur = conn.cursor()
-    # Salva com a chave 'capa_NOME' na tabela de configurações
     chave = f"capa_{nome_categoria.upper()}"
     cur.execute("INSERT OR REPLACE INTO configuracoes (chave, valor) VALUES (?, ?)", (chave, img_path))
     conn.commit()
@@ -140,8 +138,8 @@ def get_produtos_em_oferta():
     cur = conn.cursor()
     agora = datetime.datetime.now().strftime("%Y-%m-%dT%H:%M")
     cur.execute("""
-        SELECT * FROM produtos 
-        WHERE em_oferta = 1 
+        SELECT * FROM produtos
+        WHERE em_oferta = 1
         AND (oferta_fim IS NULL OR oferta_fim = '' OR oferta_fim > ?)
     """, (agora,))
     res = [dict(row) for row in cur.fetchall()]
@@ -163,11 +161,11 @@ def add_or_update_produto(dados):
     cur = conn.cursor()
     id_prod = dados.get('id') or str(int(datetime.datetime.now().timestamp()))[-8:]
     def clean_f(val): return float(str(val).replace(',', '.')) if val else 0.0
-    
+
     cur.execute("""
         INSERT OR REPLACE INTO produtos (
-            id, nome, categoria, preco, descricao, img_path_1, img_path_2, 
-            img_path_3, img_path_4, video_path, em_oferta, 
+            id, nome, categoria, preco, descricao, img_path_1, img_path_2,
+            img_path_3, img_path_4, video_path, em_oferta,
             novo_preco, oferta_fim, desconto_pix, estoque,
             frete_gratis_valor, prazo_entrega, tempo_preparo
         )
@@ -176,7 +174,7 @@ def add_or_update_produto(dados):
         id_prod, dados.get('nome'), dados.get('categoria'), clean_f(dados.get('preco')),
         dados.get('descricao'), dados.get('img_path_1'), dados.get('img_path_2'),
         dados.get('img_path_3'), dados.get('img_path_4'), dados.get('video_path'),
-        1 if dados.get('em_oferta') else 0, clean_f(dados.get('novo_preco')), 
+        1 if dados.get('em_oferta') else 0, clean_f(dados.get('novo_preco')),
         dados.get('oferta_fim'), int(dados.get('desconto_pix') or 0),
         int(dados.get('estoque') or 0), clean_f(dados.get('frete_gratis_valor')),
         dados.get('prazo_entrega'), dados.get('tempo_preparo')
@@ -278,18 +276,34 @@ def update_configuracao(chave, valor):
     conn.commit()
     conn.close()
 
+# --- VENDAS E STATUS ---
+
 def registrar_venda(nome_cliente, email_cliente, whatsapp_cliente, produto_nome, quantidade, valor_total):
     conn = create_connection()
     if not conn: return None
     cur = conn.cursor()
     cur.execute("""
-        INSERT INTO vendas (nome_cliente, email_cliente, whatsapp_cliente, produto_nome, quantidade, valor_total, status) 
+        INSERT INTO vendas (nome_cliente, email_cliente, whatsapp_cliente, produto_nome, quantidade, valor_total, status)
         VALUES (?, ?, ?, ?, ?, ?, ?)
     """, (nome_cliente, email_cliente, whatsapp_cliente, produto_nome, quantidade, valor_total, 'pendente'))
     venda_id = cur.lastrowid
     conn.commit()
     conn.close()
     return venda_id
+
+def atualizar_status_venda(id_venda, novo_status):
+    """Atualiza o status da venda (ex: de 'pendente' para 'pago')"""
+    conn = create_connection()
+    if not conn: return
+    try:
+        cur = conn.cursor()
+        cur.execute("UPDATE vendas SET status = ? WHERE id = ?", (novo_status, id_venda))
+        conn.commit()
+        print(f"✅ Venda {id_venda} atualizada para {novo_status}")
+    except Exception as e:
+        print(f"Erro ao atualizar status: {e}")
+    finally:
+        conn.close()
 
 def get_vendas():
     conn = create_connection()

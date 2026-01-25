@@ -65,6 +65,10 @@
                             <input type="text" name="whatsapp" id="whatsapp" class="form-control" placeholder="(00) 00000-0000" required>
                         </div>
                     </div>
+                    <div class="mb-3">
+                        <label class="form-label">E-mail (para receber o rastreio)</label>
+                        <input type="email" name="email" class="form-control" placeholder="seu@email.com" required>
+                    </div>
                 </div>
 
                 <div class="card p-4 mb-4">
@@ -98,7 +102,7 @@
                     </div>
                     <div class="payment-option" data-pay="pix">
                         <input type="radio" name="pay_sel" class="form-check-input me-3">
-                        <div class="fw-bold">Pix <span class="badge-pix">-{{ produto.desconto_pix }}% OFF</span></div>
+                        <div class="fw-bold">Pix <span class="badge-pix">-{{ produto.desconto_pix or 0 }}% OFF</span></div>
                     </div>
                 </div>
             </div>
@@ -124,7 +128,7 @@
 
                     <hr style="border-color: #444;">
                     <div class="d-flex justify-content-between mb-2">
-                        <span>Produto:</span>
+                        <span>Subtotal:</span>
                         <span id="resumo-subtotal">R$ 0,00</span>
                     </div>
                     <div class="d-flex justify-content-between mb-2">
@@ -136,7 +140,8 @@
                         <span class="text-success fw-bold">R$ <span id="valor-total">0,00</span></span>
                     </div>
 
-                    <button type="submit" class="btn btn-pagar w-100 mt-4">PAGAR AGORA</button>
+                    <button type="submit" class="btn btn-pagar w-100 mt-4">FINALIZAR COMPRA</button>
+                    <p class="text-center mt-3 small text-muted"><i class="fas fa-shield-alt"></i> Ambiente 100% Seguro</p>
                 </div>
             </div>
         </div>
@@ -144,39 +149,39 @@
 </div>
 
 <script>
-    // Configurações vindas do Backend
+    // Configurações Dinâmicas do Jinja
     const PRECO_ORIGINAL = parseFloat('{{ produto.novo_preco if produto.em_oferta else produto.preco }}');
     const DESC_PIX_PERCENTUAL = parseFloat('{{ produto.desconto_pix or 0 }}');
-    const FRETE_GRATIS_VALOR = 85.00; // Regra de frete grátis
+    const FRETE_GRATIS_MINIMO = parseFloat('{{ produto.frete_gratis_valor or 999999 }}');
 
     function atualizarCalculos() {
         let metodo = $('#metodo_pagamento').val();
         let valorProduto = PRECO_ORIGINAL;
 
-        // Aplica desconto se for PIX
+        // Aplica desconto PIX se selecionado
         if (metodo === 'pix') {
             valorProduto = PRECO_ORIGINAL * (1 - (DESC_PIX_PERCENTUAL / 100));
         }
 
         let valorFrete = parseFloat($('#frete_valor').val()) || 0;
         
-        // Regra de Frete Grátis
-        if (PRECO_ORIGINAL >= FRETE_GRATIS_VALOR) {
+        // Lógica de Frete Grátis baseada no valor original
+        if (PRECO_ORIGINAL >= FRETE_GRATIS_MINIMO) {
             valorFrete = 0;
         }
 
         let totalGeral = valorProduto + valorFrete;
 
-        // Atualiza a tela
+        // Atualização Visual
         $('#resumo-subtotal').text('R$ ' + valorProduto.toLocaleString('pt-br', {minimumFractionDigits: 2}));
         $('#resumo-frete').text(valorFrete === 0 ? 'GRÁTIS' : 'R$ ' + valorFrete.toLocaleString('pt-br', {minimumFractionDigits: 2}));
         $('#valor-total').text(totalGeral.toLocaleString('pt-br', {minimumFractionDigits: 2}));
         
-        // Atualiza input escondido para enviar ao Mercado Pago
+        // Envia o total final exato para o Mercado Pago
         $('#total_final_input').val(totalGeral.toFixed(2));
     }
 
-    // Evento CEP
+    // Busca de CEP e Frete
     $('#cep').on('input', function() {
         let cep = $(this).val().replace(/\D/g, '');
         if (cep.length === 8) {
@@ -188,6 +193,8 @@
                     $("#cidade_hidden").val(dados.localidade);
                     $("#estado_hidden").val(dados.uf);
                     buscarFreteMelhorEnvio(cep);
+                } else {
+                    alert("CEP não encontrado.");
                 }
                 $('#load-cep').hide();
             });
@@ -203,34 +210,37 @@
             contentType: 'application/json',
             data: JSON.stringify({ cep: cepDestino, produto_id: '{{ produto.id }}' }),
             success: function(opcoes) {
-                if (opcoes.length === 0) {
-                    $('#opcoes-frete').html('<p class="text-danger small">Nenhuma transportadora disponível.</p>');
+                if (!opcoes || opcoes.length === 0) {
+                    $('#opcoes-frete').html('<p class="text-danger small">Erro ao calcular frete. Verifique configurações.</p>');
                     return;
                 }
 
                 let html = '';
                 opcoes.forEach((opt, i) => {
                     let precoOpt = parseFloat(opt.preco);
-                    let displayPreco = (PRECO_ORIGINAL >= FRETE_GRATIS_VALOR) ? "GRÁTIS" : `R$ ${precoOpt.toFixed(2).replace('.', ',')}`;
-                    let realValorFrete = (PRECO_ORIGINAL >= FRETE_GRATIS_VALOR) ? 0 : precoOpt;
+                    // Verifica se o produto tem frete grátis
+                    let precoExibicao = (PRECO_ORIGINAL >= FRETE_GRATIS_MINIMO) ? 0 : precoOpt;
+                    let textoPreco = precoExibicao === 0 ? "GRÁTIS" : `R$ ${precoOpt.toFixed(2).replace('.', ',')}`;
 
                     html += `
-                        <div class="frete-option ${i === 0 ? 'selected-item' : ''}" onclick="selecionarFrete(this, ${realValorFrete})">
-                            <input type="radio" name="f_radio" ${i === 0 ? 'checked' : ''} style="display:none">
+                        <div class="frete-option ${i === 0 ? 'selected-item' : ''}" onclick="selecionarFrete(this, ${precoExibicao})">
                             <img src="${opt.logo}" class="img-transportadora">
                             <div class="w-100">
                                 <div class="d-flex justify-content-between">
-                                    <span class="small fw-bold">${opt.empresa} (${opt.nome})</span>
-                                    <span class="text-success fw-bold">${displayPreco}</span>
+                                    <span class="small fw-bold">${opt.empresa}</span>
+                                    <span class="text-success fw-bold">${textoPreco}</span>
                                 </div>
-                                <div style="font-size: 10px; color: #aaa;">Prazo: ${opt.prazo} dias úteis</div>
+                                <div style="font-size: 10px; color: #aaa;">Chega em até ${opt.prazo} dias úteis</div>
                             </div>
                         </div>`;
                     
-                    if(i === 0) $('#frete_valor').val(realValorFrete);
+                    if(i === 0) $('#frete_valor').val(precoExibicao);
                 });
                 $('#opcoes-frete').html(html);
                 atualizarCalculos();
+            },
+            error: function() {
+                $('#opcoes-frete').html('<p class="text-danger small">Serviço de frete indisponível no momento.</p>');
             }
         });
     }
@@ -242,7 +252,7 @@
         atualizarCalculos();
     }
 
-    // Alternar Pagamento
+    // Seleção de Método de Pagamento
     $('.payment-option').on('click', function() {
         $('.payment-option').removeClass('selected-item');
         $(this).addClass('selected-item');
@@ -250,13 +260,20 @@
         atualizarCalculos();
     });
 
-    // Máscaras Básicas
+    // Máscara de CPF simplificada
     $('#cpf').on('input', function() {
-        this.value = this.value.replace(/\D/g, '').replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, "$1.$2.$3-$4").substring(0, 14);
+        let v = this.value.replace(/\D/g, '');
+        if (v.length <= 11) {
+            v = v.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, "$1.$2.$3-$4");
+        }
+        this.value = v;
     });
-    
-    // Inicia cálculos
-    atualizarCalculos();
+
+    // Inicialização
+    $(document).ready(function() {
+        atualizarCalculos();
+    });
 </script>
+
 </body>
 </html>
