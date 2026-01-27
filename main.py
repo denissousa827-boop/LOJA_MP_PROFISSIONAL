@@ -51,7 +51,7 @@ def consultar_status_mp(payment_id):
     
     try:
         response = requests.get(url, headers=headers)
-        if response.status_id == 200:
+        if response.status_code == 200: # Corrigido de status_id para status_code
             dados = response.json()
             return dados.get('status'), dados.get('external_reference')
     except:
@@ -176,30 +176,6 @@ def cliente_cadastro_rota():
             flash("Erro ao criar conta. Verifique os dados.")
     return render_template("cadastro_cliente.html")
 
-@app.route("/cliente/recuperar-senha", methods=['GET', 'POST'])
-def recuperar_senha():
-    if request.method == 'POST':
-        cliente = database.verificar_dados_recuperacao(request.form.get('email'), request.form.get('cpf'))
-        if cliente:
-            session['id_recuperacao'] = cliente['id']
-            return redirect(url_for('nova_senha'))
-        flash("Dados não encontrados.")
-    config, _ = load_shop_config()
-    return render_template("recuperar_senha.html", config=config)
-
-@app.route("/cliente/nova-senha", methods=['GET', 'POST'])
-def nova_senha():
-    if not session.get('id_recuperacao'): return redirect(url_for('recuperar_senha'))
-    if request.method == 'POST':
-        if request.form.get('senha') == request.form.get('confirmacao'):
-            database.atualizar_senha_cliente(session['id_recuperacao'], request.form.get('senha'))
-            session.pop('id_recuperacao', None)
-            flash("Senha alterada com sucesso!")
-            return redirect(url_for('cliente_login'))
-        flash("As senhas não coincidem.")
-    config, _ = load_shop_config()
-    return render_template("nova_senha.html", config=config)
-
 # --- SISTEMA ADMINISTRATIVO ---
 @app.route("/admin/login", methods=['GET', 'POST'])
 def admin_login():
@@ -224,13 +200,6 @@ def admin_dashboard():
     config, _ = load_shop_config()
     return render_template("admin_dashboard.html", vendas=vendas, produtos=produtos, clientes=clientes, config=config)
 
-@app.route("/admin/pedidos")
-def admin_pedidos():
-    if not session.get('admin_logged_in'): return redirect(url_for('admin_login'))
-    pedidos = database.get_vendas()
-    config, _ = load_shop_config()
-    return render_template("admin_pedidos.html", pedidos=pedidos, config=config)
-
 @app.route("/admin/configuracoes", methods=['GET', 'POST'])
 def admin_configuracoes():
     if not session.get('admin_logged_in'): return redirect(url_for('admin_login'))
@@ -249,17 +218,6 @@ def admin_configuracoes():
         return redirect(url_for('admin_dashboard'))
     config, _ = load_shop_config()
     return render_template("admin_configuracoes.html", config=config)
-
-@app.route('/admin/upload_capa_cat', methods=['POST'])
-def admin_upload_capa_cat():
-    if not session.get('admin_logged_in'): return redirect(url_for('admin_login'))
-    categoria, file = request.form.get('categoria'), request.files.get('imagem_capa')
-    if file and categoria:
-        filename = secure_filename(f"capa_{categoria.lower()}.png")
-        file.save(os.path.join(UPLOAD_FOLDER_CAT, filename))
-        database.update_capa_categoria(categoria, f"uploads/categorias/{filename}")
-        flash(f'Capa de {categoria} atualizada!')
-    return redirect(url_for('admin_dashboard'))
 
 @app.route("/admin/edit", methods=['GET', 'POST'])
 @app.route("/admin/edit/<id_produto>", methods=['GET', 'POST'])
@@ -280,13 +238,6 @@ def admin_edit(id_produto=None):
     produto = database.get_produto_por_id(id_produto) if id_produto else None
     config, _ = load_shop_config()
     return render_template("admin_editar.html", produto=produto, config=config)
-
-@app.route("/admin/delete/<id_produto>", methods=['POST'])
-def admin_delete(id_produto):
-    if not session.get('admin_logged_in'): return redirect(url_for('admin_login'))
-    database.excluir_produto(id_produto)
-    flash("Produto removido!")
-    return redirect(url_for('admin_dashboard'))
 
 # --- APIs E FRETE ---
 @app.route("/calcular_frete", methods=['POST'])
@@ -309,19 +260,41 @@ def processar_pagamento():
         return redirect(link) if link else "Erro no link"
     except Exception as e: return f"Erro: {e}"
 
-# --- ROTA WEBHOOK MERCADO PAGO ---
-@app.route("/webhook/mercadopago", methods=['POST'])
+# --- ROTA WEBHOOK MERCADO PAGO ATUALIZADA ---
+@app.route("/webhook/mercadopago", methods=['POST', 'GET'])
 def webhook_mercadopago():
-    payment_id = request.args.get('data.id') or (request.json.get('data', {}).get('id') if request.is_json else None)
-    topic = request.args.get('type') or (request.json.get('type') if request.is_json else None)
+    # 1. Tenta pegar dados via Query Params (GET - igual ao link que você mandou)
+    # ou via JSON (POST - notificação silenciosa do Mercado Pago)
+    if request.method == 'GET':
+        data = request.args
+    else:
+        data = request.json if request.is_json else request.form
 
-    if topic == 'payment' and payment_id:
-        status, external_reference = consultar_status_mp(payment_id)
-        if status == 'approved':
-            database.atualizar_status_venda(external_reference, 'pago')
-            return jsonify({"status": "success"}), 200
+    # 2. Extrai ID da Venda e Status
+    # O external_reference é o ID da venda no seu banco de dados
+    id_venda = data.get('external_reference')
+    status = data.get('status') or data.get('collection_status')
+    
+    # Se for notificação silenciosa via POST, o ID do pagamento vem aqui:
+    payment_id = data.get('data.id') or (data.get('data', {}).get('id') if isinstance(data, dict) else None)
+    
+    # 3. Se temos o ID do pagamento, consultamos o status oficial na API do MP
+    if payment_id:
+        status_oficial, ref_oficial = consultar_status_mp(payment_id)
+        if status_oficial:
+            status = status_oficial
+            id_venda = ref_oficial
 
-    return jsonify({"status": "received"}), 200
+    # 4. Atualiza o banco se estiver aprovado
+    if id_venda and status == 'approved':
+        database.atualizar_status_venda(id_venda, 'pago')
+        print(f"✅ Venda {id_venda} aprovada com sucesso!")
+        
+    if request.method == 'GET':
+        # Se o cliente estiver voltando do checkout, manda para a página de sucesso
+        return redirect(url_for('sucesso'))
+    
+    return "OK", 200
 
 @app.route("/sucesso")
 def sucesso():
