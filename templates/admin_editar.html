@@ -10,28 +10,46 @@
         h2 { border-bottom: 2px solid #007bff; padding-bottom: 10px; color: #333; }
         h3 { margin-top: 25px; color: #444; border-left: 4px solid #007bff; padding-left: 10px; }
         label { display: block; margin-top: 15px; font-weight: bold; color: #444; }
+        
         input[type="text"], input[type="number"], textarea, input[type="file"], input[type="datetime-local"], select {
             width: 100%; padding: 12px; margin-top: 5px; box-sizing: border-box;
             border: 1px solid #ddd; border-radius: 8px; font-size: 16px;
             background-color: white;
         }
+
         .oferta-box {
             border: 2px dashed #ff4757; padding: 20px; margin: 25px 0;
             background-color: #fffaf0; border-radius: 10px;
         }
+
         .logistica-box {
             border: 2px solid #3483fa; padding: 20px; margin: 25px 0;
             background-color: #f0f5ff; border-radius: 10px;
         }
+
         .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+        
         button[type="submit"] {
             margin-top: 30px; width: 100%; padding: 15px;
             background-color: #2ed573; color: white; border: none;
             border-radius: 8px; font-size: 18px; font-weight: bold; cursor: pointer;
             transition: 0.3s;
         }
+
         button[type="submit"]:hover { background-color: #26af5f; transform: scale(1.01); }
-        .current-file { font-size: 12px; color: #666; margin-top: 5px; background: #eee; padding: 4px; border-radius: 4px; }
+
+        /* Estilo para as miniaturas das imagens */
+        .preview-img {
+            width: 60px; height: 60px; object-fit: cover; border-radius: 5px;
+            border: 1px solid #ccc; margin-bottom: 5px;
+        }
+        
+        .media-item {
+            background: #fff; padding: 10px; border: 1px solid #eee; border-radius: 8px;
+            display: flex; flex-direction: column; align-items: center; text-align: center;
+        }
+
+        .current-file { font-size: 11px; color: #28a745; font-weight: bold; margin-bottom: 5px; }
         .hint { font-size: 0.85em; color: #666; font-weight: normal; }
     </style>
 </head>
@@ -41,14 +59,14 @@
         <p><a href="{{ url_for('admin_dashboard') }}" style="text-decoration: none; color: #007bff; font-weight: bold;">← Voltar ao Painel</a></p>
 
         <form method="POST" enctype="multipart/form-data">
-            <label for="id">ID do Produto (Sem espaços):</label>
+            <label for="id">ID do Produto (Código único):</label>
             <input type="text" id="id" name="id" value="{{ produto.id if produto else '' }}" {% if produto %}readonly style="background:#eee;"{% endif %} required>
 
             <label for="nome">Nome do Produto:</label>
             <input type="text" id="nome" name="nome" value="{{ produto.nome if produto else '' }}" required>
 
-            <label for="categoria">Categoria do Produto: <span class="hint">(Ex: CELULARES, MODA, BRINQUEDOS)</span></label>
-            <input type="text" id="categoria" name="categoria" list="lista-categorias" value="{{ produto.categoria if produto else '' }}" placeholder="Digite ou selecione uma categoria" required>
+            <label for="categoria">Categoria:</label>
+            <input type="text" id="categoria" name="categoria" list="lista-categorias" value="{{ produto.categoria if produto else '' }}" required>
             <datalist id="lista-categorias">
                 <option value="CELULARES">
                 <option value="BRINQUEDOS">
@@ -58,7 +76,7 @@
                 <option value="GAMES">
             </datalist>
 
-            <label for="preco">Preço de Venda (R$):</label>
+            <label for="preco">Preço de Venda Original (R$):</label>
             <input type="number" id="preco" name="preco" step="0.01" value="{{ produto.preco if produto else '' }}" required>
 
             <label for="descricao">Descrição Completa:</label>
@@ -68,11 +86,11 @@
                 <h3 style="margin-top:0; color: #3483fa;">📦 Logística e Benefícios</h3>
                 <div class="grid-2">
                     <div>
-                        <label for="estoque">Estoque Atual:</label>
+                        <label for="estoque">Estoque:</label>
                         <input type="number" id="estoque" name="estoque" value="{{ produto.estoque if produto else '50' }}">
                     </div>
                     <div>
-                        <label for="desconto_pix">Desconto no Pix (%):</label>
+                        <label for="desconto_pix">Desconto Pix (%):</label>
                         <input type="number" id="desconto_pix" name="desconto_pix" value="{{ produto.desconto_pix if produto else '0' }}">
                     </div>
                 </div>
@@ -83,48 +101,56 @@
                         <input type="number" id="frete_gratis_valor" name="frete_gratis_valor" step="0.01" value="{{ produto.frete_gratis_valor if produto else '0.00' }}">
                     </div>
                     <div>
-                        <label for="prazo_entrega">Prazo de Entrega (Texto):</label>
-                        <input type="text" id="prazo_entrega" name="prazo_entrega" value="{{ produto.prazo_entrega if produto else '7 e 12 dias' }}" placeholder="Ex: 5 a 10 dias">
+                        <label for="prazo_entrega">Prazo de Entrega:</label>
+                        <input type="text" id="prazo_entrega" name="prazo_entrega" value="{{ produto.prazo_entrega if produto else '7 a 12 dias' }}">
                     </div>
                 </div>
-
-                <label for="tempo_preparo">Tempo de Preparo/Postagem:</label>
-                <input type="text" id="tempo_preparo" name="tempo_preparo" value="{{ produto.tempo_preparo if produto else '1 a 2 dias' }}">
             </div>
 
             <div class="oferta-box">
                 <h3 style="margin-top:0; color: #ff4757;">🔥 Oferta Relâmpago</h3>
-                <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
-                    <input type="checkbox" name="em_oferta" value="1" style="width: 20px; height: 20px;" {% if produto and produto.em_oferta %}checked{% endif %}>
+                <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; margin-bottom: 10px;">
+                    <input type="checkbox" name="em_oferta" value="1" {% if produto and produto.em_oferta %}checked{% endif %}>
                     Ativar Modo Oferta (Cronômetro)
                 </label>
 
-                <label for="novo_preco">Preço Promocional (R$):</label>
-                <input type="number" id="novo_preco" name="novo_preco" step="0.01" value="{{ produto.novo_preco if produto else '' }}">
-
-                <label for="oferta_fim">A oferta expira em:</label>
-                <input type="datetime-local" id="oferta_fim" name="oferta_fim" value="{{ produto.oferta_fim if produto else '' }}">
+                <div class="grid-2">
+                    <div>
+                        <label for="novo_preco">Preço Promocional (R$):</label>
+                        <input type="number" id="novo_preco" name="novo_preco" step="0.01" value="{{ produto.novo_preco if produto else '' }}">
+                    </div>
+                    <div>
+                        <label for="oferta_fim">Expira em:</label>
+                        <input type="datetime-local" id="oferta_fim" name="oferta_fim" value="{{ produto.oferta_fim if produto else '' }}">
+                    </div>
+                </div>
             </div>
 
-            <h3>Mídia do Produto</h3>
+            <h3>🖼️ Mídia do Produto (Imagens e Vídeo)</h3>
             <div class="grid-2">
                 {% for i in range(1, 5) %}
-                    {% set field = 'img_path_' ~ i %}
-                    <div>
-                        <label>Imagem {{ i }}:</label>
-                        {% if produto and produto[field] %}
-                            <div class="current-file">📁 Já existe imagem cadastrada</div>
-                        {% endif %}
-                        <input type="file" name="imagem_{{ i }}" accept="image/*">
-                    </div>
+                {% set field = 'img_path_' ~ i %}
+                <div class="media-item">
+                    <label>Imagem {{ i }}</label>
+                    {% if produto and produto[field] %}
+                        <img src="{{ produto[field] }}" class="preview-img" alt="Foto {{ i }}">
+                        <div class="current-file">Ativa ✅</div>
+                    {% else %}
+                        <div style="font-size: 10px; color: #999;">Sem imagem</div>
+                    {% endif %}
+                    <input type="file" name="imagem_{{ i }}" accept="image/*">
+                </div>
                 {% endfor %}
             </div>
 
-            <label>Vídeo Demonstrativo:</label>
-            {% if produto and produto.video_path %}
-                <div class="current-file">🎥 Já existe vídeo cadastrado</div>
-            {% endif %}
-            <input type="file" name="video" accept="video/*">
+            <div class="media-item" style="margin-top: 15px;">
+                <label>🎥 Vídeo Demonstrativo (MP4)</label>
+                {% if produto and produto.video_path %}
+                    <div class="current-file">Vídeo Cadastrado ✅</div>
+                    <small style="color: #666; margin-bottom: 5px;">{{ produto.video_path.split('/')[-1] }}</small>
+                {% endif %}
+                <input type="file" name="video" accept="video/mp4,video/x-m4v,video/*">
+            </div>
 
             <button type="submit">🚀 SALVAR TODAS AS ALTERAÇÕES</button>
         </form>

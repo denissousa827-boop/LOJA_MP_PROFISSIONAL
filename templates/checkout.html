@@ -16,19 +16,16 @@
         .btn-pagar { background-color: #00a650; color: white; font-weight: bold; font-size: 1.2rem; border: none; transition: 0.3s; padding: 15px; }
         .btn-pagar:hover { background-color: #008f45; transform: scale(1.02); }
         
-        /* Estilo das Opções de Frete */
-        .frete-option {
+        .frete-option, .payment-option {
             background: #262626; border: 2px solid #333; transition: 0.2s;
             cursor: pointer; margin-bottom: 12px; padding: 12px; display: flex; align-items: center; border-radius: 10px;
         }
-        .payment-option {
-            background: #262626; border: 2px solid #333; cursor: pointer; margin-bottom: 12px; padding: 15px; display: flex; align-items: center; border-radius: 10px;
-        }
         .selected-item { border-color: #00a650 !important; background: #1e3a2a !important; }
-
-        .img-transportadora { width: 40px; height: 40px; object-fit: contain; background: white; padding: 2px; border-radius: 4px; margin-right: 12px; }
+        .img-transportadora { width: 45px; height: 45px; object-fit: contain; background: white; padding: 4px; border-radius: 6px; margin-right: 15px; }
         .loading { display: none; color: #00a650; font-size: 0.85rem; font-weight: 500; }
         .badge-pix { background: #00a650; color: white; font-size: 11px; padding: 2px 8px; border-radius: 4px; margin-left: 10px; }
+        .product-item { border-bottom: 1px solid #333; padding-bottom: 10px; margin-bottom: 10px; }
+        input[type="radio"] { accent-color: #00a650; }
     </style>
 </head>
 <body>
@@ -36,11 +33,10 @@
 <div class="container checkout-container">
     <div class="text-center mb-5">
         <h2 class="fw-bold">Finalizar Compra</h2>
-        <p class="text-muted">🔒 Pagamento processado pelo Mercado Pago</p>
+        <p class="text-muted">🔒 Pagamento Seguro via Mercado Pago</p>
     </div>
 
     <form action="/processar_pagamento" method="POST" id="form-checkout">
-        <input type="hidden" name="id_produto" value="{{ produto.id }}">
         <input type="hidden" name="cidade" id="cidade_hidden">
         <input type="hidden" name="estado" id="estado_hidden">
         <input type="hidden" name="frete_valor" id="frete_valor" value="0">
@@ -50,10 +46,10 @@
         <div class="row">
             <div class="col-md-7">
                 <div class="card p-4 mb-4">
-                    <h4 class="mb-4 text-success">1. Seus Dados</h4>
+                    <h4 class="mb-4 text-success"><i class="fas fa-user-shield me-2"></i>1. Seus Dados</h4>
                     <div class="mb-3">
                         <label class="form-label">Nome Completo</label>
-                        <input type="text" name="nome" class="form-control" placeholder="Seu nome" required>
+                        <input type="text" name="nome" class="form-control" placeholder="Seu nome completo" required>
                     </div>
                     <div class="row">
                         <div class="col-md-6 mb-3">
@@ -66,70 +62,88 @@
                         </div>
                     </div>
                     <div class="mb-3">
-                        <label class="form-label">E-mail (para receber o rastreio)</label>
+                        <label class="form-label">E-mail</label>
                         <input type="email" name="email" class="form-control" placeholder="seu@email.com" required>
                     </div>
                 </div>
 
                 <div class="card p-4 mb-4">
-                    <h4 class="mb-4 text-success">2. Entrega</h4>
+                    <h4 class="mb-4 text-success"><i class="fas fa-truck me-2"></i>2. Endereço de Entrega</h4>
                     <div class="row">
-                        <div class="col-md-5 mb-3">
+                        <div class="col-md-6 mb-3">
                             <label class="form-label">CEP</label>
                             <input type="text" name="cep" id="cep" class="form-control" placeholder="00000-000" maxlength="9" required>
                             <small class="loading" id="load-cep"><i class="fas fa-spinner fa-spin"></i> Buscando...</small>
                         </div>
-                        <div class="col-md-3 mb-3">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Bairro</label>
+                            <input type="text" name="bairro" id="bairro" class="form-control" required>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-8 mb-3">
+                            <label class="form-label">Rua/Logradouro</label>
+                            <input type="text" name="endereco" id="rua" class="form-control" required>
+                        </div>
+                        <div class="col-md-4 mb-3">
                             <label class="form-label">Número</label>
                             <input type="text" name="numero" class="form-control" required>
                         </div>
-                        <div class="col-md-4 mb-3">
-                            <label class="form-label">UF</label>
-                            <input type="text" id="uf" class="form-control" readonly>
-                        </div>
                     </div>
                     <div class="mb-3">
-                        <label class="form-label">Rua</label>
-                        <input type="text" name="endereco" id="rua" class="form-control" readonly required>
+                        <label class="form-label">Complemento (Casa, Apto, Bloco...)</label>
+                        <input type="text" name="complemento" class="form-control" placeholder="Ex: Casa dos fundos, Apto 12...">
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label">UF</label>
+                        <input type="text" id="uf" class="form-control" readonly tabindex="-1">
                     </div>
                 </div>
 
                 <div class="card p-4 mb-4">
-                    <h4 class="mb-4 text-success">3. Pagamento</h4>
+                    <h4 class="mb-4 text-success"><i class="fas fa-credit-card me-2"></i>3. Pagamento</h4>
                     <div class="payment-option selected-item" data-pay="cartao">
                         <input type="radio" name="pay_sel" checked class="form-check-input me-3">
-                        <div class="fw-bold">Cartão de Crédito</div>
+                        <div class="fw-bold"><i class="far fa-credit-card me-2"></i> Cartão de Crédito</div>
                     </div>
                     <div class="payment-option" data-pay="pix">
                         <input type="radio" name="pay_sel" class="form-check-input me-3">
-                        <div class="fw-bold">Pix <span class="badge-pix">-{{ produto.desconto_pix or 0 }}% OFF</span></div>
+                        <div class="fw-bold">
+                            <i class="fas fa-pix me-2"></i> Pix 
+                            <span class="badge-pix">5% DE DESCONTO</span>
+                        </div>
                     </div>
                 </div>
             </div>
 
             <div class="col-md-5">
                 <div class="card p-4 sticky-top" style="top: 20px;">
-                    <h4 class="mb-4 text-success">Resumo</h4>
-                    <div class="d-flex align-items-center mb-4">
-                        <img src="{{ url_for('static', filename='uploads/' + produto.img_path_1.split('/')[-1]) if produto.img_path_1 else '/static/placeholder.png' }}" 
-                             class="rounded me-3" style="width: 60px; height: 60px; object-fit: cover;">
-                        <div>
-                            <p class="mb-0 fw-bold">{{ produto.nome }}</p>
-                            <p class="text-success mb-0">R$ <span id="valor-produto-unitario">{{ "%.2f"|format(produto.novo_preco if produto.em_oferta else produto.preco) }}</span></p>
+                    <h4 class="mb-4 text-success">Resumo do Pedido</h4>
+                    
+                    <div class="carrinho-itens mb-4">
+                        {% for item in carrinho %}
+                        <div class="d-flex align-items-center product-item">
+                            <img src="{{ url_for('static', filename='uploads/' + item.produto.img_path_1.split('/')[-1]) if item.produto.img_path_1 else '/static/placeholder.png' }}" 
+                                 class="rounded me-3" style="width: 50px; height: 50px; object-fit: cover;">
+                            <div class="flex-grow-1">
+                                <p class="mb-0 small fw-bold">{{ item.produto.nome }}</p>
+                                <p class="mb-0 text-muted small">{{ item.quantidade }}x R$ {{ "%.2f"|format(item.produto.novo_preco if item.produto.em_oferta else item.produto.preco) }}</p>
+                            </div>
                         </div>
+                        {% endfor %}
                     </div>
 
                     <div class="mb-4">
-                        <h6 class="mb-3">Selecione o Frete:</h6>
+                        <h6 class="mb-3 small fw-bold">OPÇÕES DE FRETE:</h6>
                         <div id="opcoes-frete">
-                            <p class="text-muted small">Informe o CEP para calcular...</p>
+                            <p class="text-muted small">Digite o CEP para calcular...</p>
                         </div>
                     </div>
 
                     <hr style="border-color: #444;">
                     <div class="d-flex justify-content-between mb-2">
                         <span>Subtotal:</span>
-                        <span id="resumo-subtotal">R$ 0,00</span>
+                        <span id="resumo-subtotal">R$ {{ "%.2f"|format(subtotal) }}</span>
                     </div>
                     <div class="d-flex justify-content-between mb-2">
                         <span>Frete:</span>
@@ -137,11 +151,13 @@
                     </div>
                     <div class="d-flex justify-content-between h4 mt-3">
                         <span>Total:</span>
-                        <span class="text-success fw-bold">R$ <span id="valor-total">0,00</span></span>
+                        <span class="text-success fw-bold">R$ <span id="valor-total">{{ "%.2f"|format(subtotal) }}</span></span>
                     </div>
 
-                    <button type="submit" class="btn btn-pagar w-100 mt-4">FINALIZAR COMPRA</button>
-                    <p class="text-center mt-3 small text-muted"><i class="fas fa-shield-alt"></i> Ambiente 100% Seguro</p>
+                    <button type="submit" class="btn btn-pagar w-100 mt-4" id="btn-submit">
+                        <span class="normal-text">FINALIZAR COMPRA</span>
+                        <span class="loading-text d-none"><i class="fas fa-spinner fa-spin"></i> PROCESSANDO...</span>
+                    </button>
                 </div>
             </div>
         </div>
@@ -149,110 +165,66 @@
 </div>
 
 <script>
-    // Configurações Dinâmicas do Jinja
-    const PRECO_ORIGINAL = parseFloat('{{ produto.novo_preco if produto.em_oferta else produto.preco }}');
-    const DESC_PIX_PERCENTUAL = parseFloat('{{ produto.desconto_pix or 0 }}');
-    const FRETE_GRATIS_MINIMO = parseFloat('{{ produto.frete_gratis_valor or 999999 }}');
+    const SUBTOTAL_GERAL = parseFloat('{{ subtotal }}');
+    const DESC_PIX = 0.05; // 5%
 
     function atualizarCalculos() {
         let metodo = $('#metodo_pagamento').val();
-        let valorProduto = PRECO_ORIGINAL;
-
-        // Aplica desconto PIX se selecionado
-        if (metodo === 'pix') {
-            valorProduto = PRECO_ORIGINAL * (1 - (DESC_PIX_PERCENTUAL / 100));
-        }
-
+        let valorBase = SUBTOTAL_GERAL;
         let valorFrete = parseFloat($('#frete_valor').val()) || 0;
-        
-        // Lógica de Frete Grátis baseada no valor original
-        if (PRECO_ORIGINAL >= FRETE_GRATIS_MINIMO) {
-            valorFrete = 0;
+
+        if (metodo === 'pix') {
+            valorBase = SUBTOTAL_GERAL * (1 - DESC_PIX);
         }
 
-        let totalGeral = valorProduto + valorFrete;
+        let total = valorBase + valorFrete;
 
-        // Atualização Visual
-        $('#resumo-subtotal').text('R$ ' + valorProduto.toLocaleString('pt-br', {minimumFractionDigits: 2}));
-        $('#resumo-frete').text(valorFrete === 0 ? 'GRÁTIS' : 'R$ ' + valorFrete.toLocaleString('pt-br', {minimumFractionDigits: 2}));
-        $('#valor-total').text(totalGeral.toLocaleString('pt-br', {minimumFractionDigits: 2}));
-        
-        // Envia o total final exato para o Mercado Pago
-        $('#total_final_input').val(totalGeral.toFixed(2));
+        $('#resumo-subtotal').text('R$ ' + valorBase.toLocaleString('pt-br', {minimumFractionDigits: 2}));
+        $('#resumo-frete').text(valorFrete === 0 ? 'A calcular' : 'R$ ' + valorFrete.toLocaleString('pt-br', {minimumFractionDigits: 2}));
+        $('#valor-total').text(total.toLocaleString('pt-br', {minimumFractionDigits: 2}));
+        $('#total_final_input').val(total.toFixed(2));
     }
 
-    // Busca de CEP e Frete
-    $('#cep').on('input', function() {
+    // Busca CEP
+    $('#cep').on('keyup', function() {
         let cep = $(this).val().replace(/\D/g, '');
         if (cep.length === 8) {
             $('#load-cep').show();
             $.getJSON(`https://viacep.com.br/ws/${cep}/json/`, function(dados) {
                 if (!("erro" in dados)) {
                     $("#rua").val(dados.logradouro);
+                    $("#bairro").val(dados.bairro);
                     $("#uf").val(dados.uf);
                     $("#cidade_hidden").val(dados.localidade);
                     $("#estado_hidden").val(dados.uf);
-                    buscarFreteMelhorEnvio(cep);
-                } else {
-                    alert("CEP não encontrado.");
+                    
+                    // Simulação de Frete (Aqui você chamaria seu /calcular_frete se tiver Melhor Envio)
+                    $('#opcoes-frete').html(`
+                        <div class="frete-option selected-item" onclick="selecionarFrete(this, 15.50)">
+                            <img src="https://logodownload.org/wp-content/uploads/2014/05/correios-logo-1-1.png" class="img-transportadora">
+                            <div class="w-100">
+                                <div class="d-flex justify-content-between">
+                                    <span class="small fw-bold">Correios (SEDEX)</span>
+                                    <span class="text-success fw-bold">R$ 15,50</span>
+                                </div>
+                            </div>
+                        </div>
+                    `);
+                    $('#frete_valor').val(15.50);
+                    atualizarCalculos();
                 }
                 $('#load-cep').hide();
             });
         }
     });
 
-    function buscarFreteMelhorEnvio(cepDestino) {
-        $('#opcoes-frete').html('<div class="text-success small"><i class="fas fa-truck-loading fa-spin"></i> Consultando prazos...</div>');
-        
-        $.ajax({
-            url: '/calcular_frete',
-            type: 'POST',
-            contentType: 'application/json',
-            data: JSON.stringify({ cep: cepDestino, produto_id: '{{ produto.id }}' }),
-            success: function(opcoes) {
-                if (!opcoes || opcoes.length === 0) {
-                    $('#opcoes-frete').html('<p class="text-danger small">Erro ao calcular frete. Verifique configurações.</p>');
-                    return;
-                }
-
-                let html = '';
-                opcoes.forEach((opt, i) => {
-                    let precoOpt = parseFloat(opt.preco);
-                    // Verifica se o produto tem frete grátis
-                    let precoExibicao = (PRECO_ORIGINAL >= FRETE_GRATIS_MINIMO) ? 0 : precoOpt;
-                    let textoPreco = precoExibicao === 0 ? "GRÁTIS" : `R$ ${precoOpt.toFixed(2).replace('.', ',')}`;
-
-                    html += `
-                        <div class="frete-option ${i === 0 ? 'selected-item' : ''}" onclick="selecionarFrete(this, ${precoExibicao})">
-                            <img src="${opt.logo}" class="img-transportadora">
-                            <div class="w-100">
-                                <div class="d-flex justify-content-between">
-                                    <span class="small fw-bold">${opt.empresa}</span>
-                                    <span class="text-success fw-bold">${textoPreco}</span>
-                                </div>
-                                <div style="font-size: 10px; color: #aaa;">Chega em até ${opt.prazo} dias úteis</div>
-                            </div>
-                        </div>`;
-                    
-                    if(i === 0) $('#frete_valor').val(precoExibicao);
-                });
-                $('#opcoes-frete').html(html);
-                atualizarCalculos();
-            },
-            error: function() {
-                $('#opcoes-frete').html('<p class="text-danger small">Serviço de frete indisponível no momento.</p>');
-            }
-        });
-    }
-
-    function selecionarFrete(elemento, valor) {
+    function selecionarFrete(el, valor) {
         $('.frete-option').removeClass('selected-item');
-        $(elemento).addClass('selected-item');
+        $(el).addClass('selected-item');
         $('#frete_valor').val(valor);
         atualizarCalculos();
     }
 
-    // Seleção de Método de Pagamento
     $('.payment-option').on('click', function() {
         $('.payment-option').removeClass('selected-item');
         $(this).addClass('selected-item');
@@ -260,20 +232,20 @@
         atualizarCalculos();
     });
 
-    // Máscara de CPF simplificada
+    // Mascaras simples
     $('#cpf').on('input', function() {
-        let v = this.value.replace(/\D/g, '');
-        if (v.length <= 11) {
-            v = v.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, "$1.$2.$3-$4");
-        }
-        this.value = v;
+        let v = this.value.replace(/\D/g, '').match(/(\d{0,3})(\d{0,3})(\d{0,3})(\d{0,2})/);
+        this.value = !v[2] ? v[1] : v[1] + '.' + v[2] + (v[3] ? '.' + v[3] : '') + (v[4] ? '-' + v[4] : '');
     });
 
-    // Inicialização
+    $('#whatsapp').on('input', function() {
+        let v = this.value.replace(/\D/g, '').match(/(\d{0,2})(\d{0,5})(\d{0,4})/);
+        this.value = !v[2] ? v[1] : '(' + v[1] + ') ' + v[2] + (v[3] ? '-' + v[3] : '');
+    });
+
     $(document).ready(function() {
         atualizarCalculos();
     });
 </script>
-
 </body>
 </html>
