@@ -15,17 +15,12 @@
         .form-control:focus, .form-control:read-only { background-color: #2d2d2d; border-color: #00a650; color: #ffffff; box-shadow: none; }
         .btn-pagar { background-color: #00a650; color: white; font-weight: bold; font-size: 1.2rem; border: none; transition: 0.3s; padding: 15px; }
         .btn-pagar:hover { background-color: #008f45; transform: scale(1.02); }
-        
-        .frete-option, .payment-option {
-            background: #262626; border: 2px solid #333; transition: 0.2s;
-            cursor: pointer; margin-bottom: 12px; padding: 12px; display: flex; align-items: center; border-radius: 10px;
-        }
+        .frete-option, .payment-option { background: #262626; border: 2px solid #333; transition: 0.2s; cursor: pointer; margin-bottom: 12px; padding: 12px; display: flex; align-items: center; border-radius: 10px; }
         .selected-item { border-color: #00a650 !important; background: #1e3a2a !important; }
         .img-transportadora { width: 45px; height: 45px; object-fit: contain; background: white; padding: 4px; border-radius: 6px; margin-right: 15px; }
-        .loading { display: none; color: #00a650; font-size: 0.85rem; font-weight: 500; }
         .badge-pix { background: #00a650; color: white; font-size: 11px; padding: 2px 8px; border-radius: 4px; margin-left: 10px; }
         .product-item { border-bottom: 1px solid #333; padding-bottom: 10px; margin-bottom: 10px; }
-        input[type="radio"] { accent-color: #00a650; }
+        .text-success { color: #00a650 !important; }
     </style>
 </head>
 <body>
@@ -37,11 +32,13 @@
     </div>
 
     <form action="/processar_pagamento" method="POST" id="form-checkout">
+        <input type="hidden" name="id_produto" value="{{ produto.id if produto else 'carrinho_multi' }}">
         <input type="hidden" name="cidade" id="cidade_hidden">
         <input type="hidden" name="estado" id="estado_hidden">
         <input type="hidden" name="frete_valor" id="frete_valor" value="0">
         <input type="hidden" name="metodo_pagamento" id="metodo_pagamento" value="cartao">
-        <input type="hidden" name="total_final" id="total_final_input">
+        
+        <input type="hidden" name="total_final" id="total_final_input" value="{{ subtotal }}">
 
         <div class="row">
             <div class="col-md-7">
@@ -63,7 +60,7 @@
                     </div>
                     <div class="mb-3">
                         <label class="form-label">E-mail</label>
-                        <input type="email" name="email" class="form-control" placeholder="seu@email.com" required>
+                        <input type="email" name="email" class="form-control" placeholder="seuemail@exemplo.com" required>
                     </div>
                 </div>
 
@@ -73,7 +70,6 @@
                         <div class="col-md-6 mb-3">
                             <label class="form-label">CEP</label>
                             <input type="text" name="cep" id="cep" class="form-control" placeholder="00000-000" maxlength="9" required>
-                            <small class="loading" id="load-cep"><i class="fas fa-spinner fa-spin"></i> Buscando...</small>
                         </div>
                         <div class="col-md-6 mb-3">
                             <label class="form-label">Bairro</label>
@@ -87,16 +83,12 @@
                         </div>
                         <div class="col-md-4 mb-3">
                             <label class="form-label">Número</label>
-                            <input type="text" name="numero" class="form-control" required>
+                            <input type="text" name="numero" class="form-control" placeholder="123" required>
                         </div>
                     </div>
                     <div class="mb-3">
-                        <label class="form-label">Complemento (Casa, Apto, Bloco...)</label>
-                        <input type="text" name="complemento" class="form-control" placeholder="Ex: Casa dos fundos, Apto 12...">
-                    </div>
-                    <div class="col-md-4 mb-3">
                         <label class="form-label">UF</label>
-                        <input type="text" id="uf" class="form-control" readonly tabindex="-1">
+                        <input type="text" id="uf" name="uf" class="form-control" readonly>
                     </div>
                 </div>
 
@@ -104,14 +96,11 @@
                     <h4 class="mb-4 text-success"><i class="fas fa-credit-card me-2"></i>3. Pagamento</h4>
                     <div class="payment-option selected-item" data-pay="cartao">
                         <input type="radio" name="pay_sel" checked class="form-check-input me-3">
-                        <div class="fw-bold"><i class="far fa-credit-card me-2"></i> Cartão de Crédito</div>
+                        <div class="fw-bold">Cartão de Crédito</div>
                     </div>
                     <div class="payment-option" data-pay="pix">
                         <input type="radio" name="pay_sel" class="form-check-input me-3">
-                        <div class="fw-bold">
-                            <i class="fas fa-pix me-2"></i> Pix 
-                            <span class="badge-pix">5% DE DESCONTO</span>
-                        </div>
+                        <div class="fw-bold">Pix <span class="badge-pix">5% DE DESCONTO</span></div>
                     </div>
                 </div>
             </div>
@@ -119,45 +108,39 @@
             <div class="col-md-5">
                 <div class="card p-4 sticky-top" style="top: 20px;">
                     <h4 class="mb-4 text-success">Resumo do Pedido</h4>
-                    
                     <div class="carrinho-itens mb-4">
                         {% for item in carrinho %}
                         <div class="d-flex align-items-center product-item">
-                            <img src="{{ url_for('static', filename='uploads/' + item.produto.img_path_1.split('/')[-1]) if item.produto.img_path_1 else '/static/placeholder.png' }}" 
-                                 class="rounded me-3" style="width: 50px; height: 50px; object-fit: cover;">
+                            {% set img_url = item.produto.img_path_1.split('/')[-1] if item.produto.img_path_1 else 'placeholder.png' %}
+                            <img src="{{ url_for('static', filename='uploads/' + img_url) }}" class="rounded me-3" style="width: 50px; height: 50px; object-fit: cover; border: 1px solid #333;">
                             <div class="flex-grow-1">
                                 <p class="mb-0 small fw-bold">{{ item.produto.nome }}</p>
                                 <p class="mb-0 text-muted small">{{ item.quantidade }}x R$ {{ "%.2f"|format(item.produto.novo_preco if item.produto.em_oferta else item.produto.preco) }}</p>
+                                <p class="mb-0 text-success small">Total: R$ {{ "%.2f"|format(item.quantidade * (item.produto.novo_preco if item.produto.em_oferta else item.produto.preco)) }}</p>
                             </div>
                         </div>
                         {% endfor %}
                     </div>
 
-                    <div class="mb-4">
-                        <h6 class="mb-3 small fw-bold">OPÇÕES DE FRETE:</h6>
-                        <div id="opcoes-frete">
-                            <p class="text-muted small">Digite o CEP para calcular...</p>
-                        </div>
+                    <div id="opcoes-frete" class="mb-3">
+                        <p class="text-muted small">Insira o CEP para calcular o frete.</p>
                     </div>
 
-                    <hr style="border-color: #444;">
                     <div class="d-flex justify-content-between mb-2">
-                        <span>Subtotal:</span>
-                        <span id="resumo-subtotal">R$ {{ "%.2f"|format(subtotal) }}</span>
+                        <span>Subtotal (Produtos):</span>
+                        <span id="resumo-subtotal" class="fw-bold">R$ {{ "%.2f"|format(subtotal) }}</span>
                     </div>
                     <div class="d-flex justify-content-between mb-2">
                         <span>Frete:</span>
                         <span id="resumo-frete">R$ 0,00</span>
                     </div>
-                    <div class="d-flex justify-content-between h4 mt-3">
+                    <hr>
+                    <div class="d-flex justify-content-between h4">
                         <span>Total:</span>
-                        <span class="text-success fw-bold">R$ <span id="valor-total">{{ "%.2f"|format(subtotal) }}</span></span>
+                        <span class="text-success fw-bold" id="valor-total-display">R$ {{ "%.2f"|format(subtotal) }}</span>
                     </div>
 
-                    <button type="submit" class="btn btn-pagar w-100 mt-4" id="btn-submit">
-                        <span class="normal-text">FINALIZAR COMPRA</span>
-                        <span class="loading-text d-none"><i class="fas fa-spinner fa-spin"></i> PROCESSANDO...</span>
-                    </button>
+                    <button type="submit" class="btn btn-pagar w-100 mt-4">FINALIZAR COMPRA</button>
                 </div>
             </div>
         </div>
@@ -165,82 +148,81 @@
 </div>
 
 <script>
-    const SUBTOTAL_GERAL = parseFloat('{{ subtotal }}');
-    const DESC_PIX = 0.05; // 5%
+    // Valor total vindo do servidor (Soma de Quantidade x Preço de todos os itens)
+    const SUBTOTAL_GERAL_PRODUTOS = parseFloat("{{ subtotal }}") || 0;
+    const DESC_PIX = 0.05;
 
     function atualizarCalculos() {
         let metodo = $('#metodo_pagamento').val();
-        let valorBase = SUBTOTAL_GERAL;
         let valorFrete = parseFloat($('#frete_valor').val()) || 0;
+        let subtotalComDesconto = SUBTOTAL_GERAL_PRODUTOS;
 
+        // Se for Pix, aplica o desconto no subtotal antes de somar o frete
         if (metodo === 'pix') {
-            valorBase = SUBTOTAL_GERAL * (1 - DESC_PIX);
+            subtotalComDesconto = SUBTOTAL_GERAL_PRODUTOS * (1 - DESC_PIX);
         }
 
-        let total = valorBase + valorFrete;
+        let totalGeral = subtotalComDesconto + valorFrete;
 
-        $('#resumo-subtotal').text('R$ ' + valorBase.toLocaleString('pt-br', {minimumFractionDigits: 2}));
-        $('#resumo-frete').text(valorFrete === 0 ? 'A calcular' : 'R$ ' + valorFrete.toLocaleString('pt-br', {minimumFractionDigits: 2}));
-        $('#valor-total').text(total.toLocaleString('pt-br', {minimumFractionDigits: 2}));
-        $('#total_final_input').val(total.toFixed(2));
+        // Atualização Visual (Formato Brasileiro)
+        $('#resumo-subtotal').text('R$ ' + subtotalComDesconto.toLocaleString('pt-br', {minimumFractionDigits: 2}));
+        $('#resumo-frete').text('R$ ' + valorFrete.toLocaleString('pt-br', {minimumFractionDigits: 2}));
+        $('#valor-total-display').text('R$ ' + totalGeral.toLocaleString('pt-br', {minimumFractionDigits: 2}));
+        
+        // Atualiza o campo que o Mercado Pago vai ler
+        $('#total_final_input').val(totalGeral.toFixed(2));
     }
 
-    // Busca CEP
-    $('#cep').on('keyup', function() {
+    // Cálculo de Frete via CEP
+    $('#cep').on('blur', function() {
         let cep = $(this).val().replace(/\D/g, '');
         if (cep.length === 8) {
-            $('#load-cep').show();
-            $.getJSON(`https://viacep.com.br/ws/${cep}/json/`, function(dados) {
-                if (!("erro" in dados)) {
-                    $("#rua").val(dados.logradouro);
-                    $("#bairro").val(dados.bairro);
-                    $("#uf").val(dados.uf);
-                    $("#cidade_hidden").val(dados.localidade);
-                    $("#estado_hidden").val(dados.uf);
+            $('#opcoes-frete').html('<p class="text-info small"><i class="fas fa-spinner fa-spin"></i> Calculando frete...</p>');
+            
+            $.getJSON(`https://viacep.com.br/ws/${cep}/json/`, function(d) {
+                if (!d.erro) {
+                    $('#rua').val(d.logradouro);
+                    $('#bairro').val(d.bairro);
+                    $('#uf').val(d.uf);
+                    $('#cidade_hidden').val(d.localidade);
+                    $('#estado_hidden').val(d.uf);
                     
-                    // Simulação de Frete (Aqui você chamaria seu /calcular_frete se tiver Melhor Envio)
+                    // Simulação de frete profissional (R$ 15,50)
+                    let valorDoFrete = 15.50; 
+                    $('#frete_valor').val(valorDoFrete);
+                    
                     $('#opcoes-frete').html(`
-                        <div class="frete-option selected-item" onclick="selecionarFrete(this, 15.50)">
+                        <div class="frete-option selected-item">
                             <img src="https://logodownload.org/wp-content/uploads/2014/05/correios-logo-1-1.png" class="img-transportadora">
-                            <div class="w-100">
-                                <div class="d-flex justify-content-between">
-                                    <span class="small fw-bold">Correios (SEDEX)</span>
-                                    <span class="text-success fw-bold">R$ 15,50</span>
-                                </div>
+                            <div>
+                                <div class="fw-bold">Correios (SEDEX)</div>
+                                <div class="text-success">R$ ${valorDoFrete.toFixed(2).replace('.',',')}</div>
                             </div>
                         </div>
                     `);
-                    $('#frete_valor').val(15.50);
+                    
                     atualizarCalculos();
+                } else {
+                    alert("CEP não encontrado.");
+                    $('#opcoes-frete').html('<p class="text-danger small">CEP inválido.</p>');
                 }
-                $('#load-cep').hide();
             });
         }
     });
 
-    function selecionarFrete(el, valor) {
-        $('.frete-option').removeClass('selected-item');
-        $(el).addClass('selected-item');
-        $('#frete_valor').val(valor);
-        atualizarCalculos();
-    }
-
+    // Seleção de Pagamento
     $('.payment-option').on('click', function() {
         $('.payment-option').removeClass('selected-item');
         $(this).addClass('selected-item');
+        $(this).find('input[type="radio"]').prop('checked', true);
         $('#metodo_pagamento').val($(this).data('pay'));
         atualizarCalculos();
     });
 
-    // Mascaras simples
+    // Máscaras de input
     $('#cpf').on('input', function() {
         let v = this.value.replace(/\D/g, '').match(/(\d{0,3})(\d{0,3})(\d{0,3})(\d{0,2})/);
         this.value = !v[2] ? v[1] : v[1] + '.' + v[2] + (v[3] ? '.' + v[3] : '') + (v[4] ? '-' + v[4] : '');
-    });
-
-    $('#whatsapp').on('input', function() {
-        let v = this.value.replace(/\D/g, '').match(/(\d{0,2})(\d{0,5})(\d{0,4})/);
-        this.value = !v[2] ? v[1] : '(' + v[1] + ') ' + v[2] + (v[3] ? '-' + v[3] : '');
     });
 
     $(document).ready(function() {

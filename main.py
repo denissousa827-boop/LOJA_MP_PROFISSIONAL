@@ -2,7 +2,7 @@ from flask import Flask, render_template, request, redirect, url_for, session, f
 from werkzeug.utils import secure_filename
 import os
 import datetime
-import requests
+import requests # Necessário para consultar o Mercado Pago
 
 # Importação dos seus módulos
 from apimercadopago import gerar_link_pagamento
@@ -18,12 +18,10 @@ if IS_VERCEL:
     UPLOAD_FOLDER = '/tmp'
     UPLOAD_FOLDER_CAT = '/tmp'
 else:
-    BASE_DIR = os.path.abspath(os.path.dirname(__file__))
-    UPLOAD_FOLDER = os.path.join(BASE_DIR, 'static', 'uploads')
-    UPLOAD_FOLDER_CAT = os.path.join(UPLOAD_FOLDER, 'categorias')
+    UPLOAD_FOLDER = 'static/uploads'
+    UPLOAD_FOLDER_CAT = 'static/uploads/categorias'
 
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
-app.config['UPLOAD_FOLDER_CAT'] = UPLOAD_FOLDER_CAT
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'mp4'}
 
 if not IS_VERCEL:
@@ -38,21 +36,20 @@ def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 def load_shop_config():
-    try:
-        config = database.get_configuracoes() or {}
-        banner_pagamento = config.get('banner_principal', '')
-        return config, banner_pagamento
-    except:
-        return {}, ''
+    config = database.get_configuracoes() or {}
+    banner_pagamento = config.get('banner_principal', '')
+    return config, banner_pagamento
 
 def consultar_status_mp(payment_id):
     config, _ = load_shop_config()
     token = config.get('mercado_pago_token')
     if not token: return None, None
+    
     url = f"https://api.mercadopago.com/v1/payments/{payment_id}"
     headers = {"Authorization": f"Bearer {token}"}
+    
     try:
-        response = requests.get(url, headers=headers, timeout=10)
+        response = requests.get(url, headers=headers)
         if response.status_code == 200:
             dados = response.json()
             return dados.get('status'), dados.get('external_reference')
@@ -75,9 +72,9 @@ def pesquisar():
     todos_produtos = database.get_produtos()
     produtos_encontrados = []
     if query:
-        query_lower = query.lower()
+        query = query.lower()
         for p in todos_produtos:
-            if query_lower in p.get('nome', '').lower() or query_lower in p.get('descricao', '').lower():
+            if query in p.get('nome', '').lower() or query in p.get('descricao', '').lower():
                 produtos_encontrados.append(p)
     return render_template("pesquisa.html", produtos=produtos_encontrados, query=query, config=config, banner_pagamento=banner_pagamento)
 
@@ -94,48 +91,47 @@ def produto_detalhes(id_produto):
     produto = database.get_produto_por_id(id_produto)
     if not produto: return redirect(url_for('homepage'))
     config, banner_pagamento = load_shop_config()
-    
-    imagens = []
-    for i in range(1, 5):
-        path = produto.get(f'img_path_{i}')
-        if path: imagens.append(path)
-            
+    imagens = [produto.get(f'img_path_{i}') for i in range(1, 5) if produto.get(f'img_path_{i}')]
     return render_template("produto_detalhes.html", produto=produto, imagens=imagens, config=config, banner_pagamento=banner_pagamento)
 
-# --- ROTA DE CHECKOUT (SOMA TOTAL CORRIGIDA) ---
-@app.route("/checkout")
+# --- ROTA DE CHECKOUT (ATUALIZADA PARA QUANTIDADE E CARRINHO) ---
 @app.route("/checkout/<id_produto>")
-def checkout(id_produto=None):
+def checkout(id_produto):
     config, _ = load_shop_config()
+    carrinho_para_exibir = []
+    subtotal_valor = 0.0
+
+    # Pega a quantidade da URL (caso venha do botão 'Comprar Agora')
+    qtd_direta = request.args.get('qtd', 1, type=int)
+
+    # CASO 1: Compra Direta (Botão Comprar Agora)
+    if id_produto != "carrinho":
+        produto = database.get_produto_por_id(id_produto)
+        if not produto: return redirect(url_for('homepage'))
+        
+        preco = float(produto['novo_preco'] if produto.get('em_oferta') else produto['preco'])
+        subtotal_valor = preco * qtd_direta
+        carrinho_para_exibir.append({'produto': produto, 'quantidade': qtd_direta})
     
-    # Se vier ID na URL, é "Comprar Agora" (limpa carrinho e foca no produto)
-    if id_produto:
-        session['carrinho'] = {str(id_produto): 1}
-        session.modified = True
+    # CASO 2: Checkout do Carrinho Completo
+    else:
+        carrinho_sessao = session.get('carrinho', {})
+        if not carrinho_sessao:
+            flash("Seu carrinho está vazio.")
+            return redirect(url_for('homepage'))
+            
+        for p_id, qtd in carrinho_sessao.items():
+            p = database.get_produto_por_id(p_id)
+            if p:
+                preco = float(p['novo_preco'] if p.get('em_oferta') else p['preco'])
+                subtotal_valor += (preco * qtd)
+                carrinho_para_exibir.append({'produto': p, 'quantidade': qtd})
 
-    carrinho_sessao = session.get('carrinho', {})
-
-    if not carrinho_sessao:
-        flash("Seu carrinho está vazio.")
-        return redirect(url_for('homepage'))
-
-    itens_do_carrinho = []
-    valor_total_soma = 0.0
-
-    for id_p, qtd in carrinho_sessao.items():
-        p = database.get_produto_por_id(id_p)
-        if p:
-            # Pega preço de oferta se existir, senão preço normal
-            preco_un = float(p['novo_preco'] if p.get('em_oferta') else p['preco'])
-            subtotal_item = preco_un * int(qtd)
-            valor_total_soma += subtotal_item
-            itens_do_carrinho.append({
-                'produto': p, 
-                'quantidade': qtd, 
-                'subtotal': subtotal_item
-            })
-
-    return render_template('checkout.html', carrinho=itens_do_carrinho, subtotal=valor_total_soma, config=config)
+    return render_template("checkout.html", 
+                           produto=carrinho_para_exibir[0]['produto'] if id_produto != "carrinho" else None, 
+                           carrinho=carrinho_para_exibir, 
+                           config=config, 
+                           subtotal=subtotal_valor)
 
 # --- SISTEMA DE CARRINHO ---
 @app.route("/carrinho")
@@ -143,7 +139,7 @@ def exibir_carrinho():
     config, _ = load_shop_config()
     carrinho_sessao = session.get('carrinho', {})
     produtos_no_carrinho = []
-    total_geral = 0.0
+    total_geral = 0
     for id_p, qtd in carrinho_sessao.items():
         p = database.get_produto_por_id(id_p)
         if p:
@@ -178,7 +174,8 @@ def cliente_login():
             session['cliente_email'] = cliente['email']
             flash(f"Bem-vindo de volta, {cliente['nome']}!")
             return redirect(url_for('homepage'))
-        flash("E-mail ou senha incorretos.")
+        else:
+            flash("E-mail ou senha incorretos.")
     return render_template("cliente_login.html")
 
 @app.route("/meus-pedidos")
@@ -193,25 +190,46 @@ def meus_pedidos():
 
 @app.route("/cliente/logout")
 def cliente_logout():
-    session.clear()
+    session.pop('cliente_id', None)
+    session.pop('cliente_nome', None)
+    session.pop('cliente_email', None)
     flash("Você saiu da sua conta.")
     return redirect(url_for('homepage'))
 
 @app.route("/cliente/cadastro", methods=['GET', 'POST'])
 def cliente_cadastro_rota():
     if request.method == 'POST':
-        dados = {
-            'nome': request.form.get('nome'), 
-            'cpf': request.form.get('cpf'), 
-            'email': request.form.get('email'), 
-            'telefone': request.form.get('telefone'), 
-            'senha': request.form.get('senha')
-        }
+        dados = {'nome': request.form.get('nome'), 'cpf': request.form.get('cpf'), 'email': request.form.get('email'), 'telefone': request.form.get('telefone'), 'senha': request.form.get('senha')}
         if database.salvar_novo_cliente(dados):
             flash("Conta criada com sucesso! Faça seu login.")
             return redirect(url_for('cliente_login'))
-        flash("Erro ao criar conta. Verifique os dados.")
+        else:
+            flash("Erro ao criar conta. Verifique os dados.")
     return render_template("cadastro_cliente.html")
+
+@app.route("/cliente/recuperar-senha", methods=['GET', 'POST'])
+def recuperar_senha():
+    if request.method == 'POST':
+        cliente = database.verificar_dados_recuperacao(request.form.get('email'), request.form.get('cpf'))
+        if cliente:
+            session['id_recuperacao'] = cliente['id']
+            return redirect(url_for('nova_senha'))
+        flash("Dados não encontrados.")
+    config, _ = load_shop_config()
+    return render_template("recuperar_senha.html", config=config)
+
+@app.route("/cliente/nova-senha", methods=['GET', 'POST'])
+def nova_senha():
+    if not session.get('id_recuperacao'): return redirect(url_for('recuperar_senha'))
+    if request.method == 'POST':
+        if request.form.get('senha') == request.form.get('confirmacao'):
+            database.atualizar_senha_cliente(session['id_recuperacao'], request.form.get('senha'))
+            session.pop('id_recuperacao', None)
+            flash("Senha alterada com sucesso!")
+            return redirect(url_for('cliente_login'))
+        flash("As senhas não coincidem.")
+    config, _ = load_shop_config()
+    return render_template("nova_senha.html", config=config)
 
 # --- SISTEMA ADMINISTRATIVO ---
 @app.route("/admin/login", methods=['GET', 'POST'])
@@ -237,15 +255,21 @@ def admin_dashboard():
     config, _ = load_shop_config()
     return render_template("admin_dashboard.html", vendas=vendas, produtos=produtos, clientes=clientes, config=config)
 
+@app.route("/admin/pedidos")
+def admin_pedidos():
+    if not session.get('admin_logged_in'): return redirect(url_for('admin_login'))
+    pedidos = database.get_vendas()
+    config, _ = load_shop_config()
+    return render_template("admin_pedidos.html", pedidos=pedidos, config=config)
+
 @app.route("/admin/configuracoes", methods=['GET', 'POST'])
 def admin_configuracoes():
     if not session.get('admin_logged_in'): return redirect(url_for('admin_login'))
     if request.method == 'POST':
-        campos = ['titulo_site', 'contato_whatsapp', 'contato_email', 'header_color', 'footer_color', 'mercado_pago_token', 'melhor_envio_token', 'cep_origem', 'desconto_pix']
+        campos = ['titulo_site', 'contato_whatsapp', 'contato_email', 'header_color', 'footer_color', 'mercado_pago_token', 'melhor_envio_token', 'cep_origem']
         for campo in campos:
             valor = request.form.get(campo)
             if valor is not None: database.update_configuracao(campo, valor)
-        
         for file_key in ['logo_img', 'banner_principal']:
             file = request.files.get(file_key)
             if file and allowed_file(file.filename):
@@ -257,72 +281,36 @@ def admin_configuracoes():
     config, _ = load_shop_config()
     return render_template("admin_configuracoes.html", config=config)
 
-@app.route("/admin/upload_capa_cat", methods=['POST'])
+@app.route('/admin/upload_capa_cat', methods=['POST'])
 def admin_upload_capa_cat():
     if not session.get('admin_logged_in'): return redirect(url_for('admin_login'))
-    categoria_nome = request.form.get('categoria_nome')
-    file = request.files.get('capa_img')
-    
-    if file and categoria_nome and allowed_file(file.filename):
-        filename = f"capa_{secure_filename(categoria_nome.lower())}.png"
-        file.save(os.path.join(app.config['UPLOAD_FOLDER_CAT'], filename))
-        flash(f"Capa da categoria '{categoria_nome}' atualizada!")
-    else:
-        flash("Erro ao fazer upload da capa.")
-    
+    categoria, file = request.form.get('categoria'), request.files.get('imagem_capa')
+    if file and categoria:
+        filename = secure_filename(f"capa_{categoria.lower()}.png")
+        file.save(os.path.join(UPLOAD_FOLDER_CAT, filename))
+        database.update_capa_categoria(categoria, f"uploads/categorias/{filename}")
+        flash(f'Capa de {categoria} atualizada!')
     return redirect(url_for('admin_dashboard'))
 
 @app.route("/admin/edit", methods=['GET', 'POST'])
 @app.route("/admin/edit/<id_produto>", methods=['GET', 'POST'])
 def admin_edit(id_produto=None):
     if not session.get('admin_logged_in'): return redirect(url_for('admin_login'))
-    prod_existente = database.get_produto_por_id(id_produto or request.form.get('id')) if (id_produto or request.form.get('id')) else None
-
     if request.method == 'POST':
-        def to_f(v): 
-            if not v: return 0.0
-            return float(str(v).replace(',', '.'))
-            
-        dados = {
-            'id': id_produto or request.form.get('id'),
-            'nome': request.form.get('nome'),
-            'categoria': request.form.get('categoria'),
-            'preco': to_f(request.form.get('preco')),
-            'descricao': request.form.get('descricao'),
-            'em_oferta': 'em_oferta' in request.form,
-            'novo_preco': to_f(request.form.get('novo_preco')),
-            'oferta_fim': request.form.get('oferta_fim'),
-            'desconto_pix': int(request.form.get('desconto_pix') or 0),
-            'estoque': int(request.form.get('estoque') or 0),
-            'frete_gratis_valor': to_f(request.form.get('frete_gratis_valor')),
-            'prazo_entrega': request.form.get('prazo_entrega'),
-            'tempo_preparo': request.form.get('tempo_preparo'),
-            'img_path_1': prod_existente.get('img_path_1', '') if prod_existente else '',
-            'img_path_2': prod_existente.get('img_path_2', '') if prod_existente else '',
-            'img_path_3': prod_existente.get('img_path_3', '') if prod_existente else '',
-            'img_path_4': prod_existente.get('img_path_4', '') if prod_existente else '',
-            'video_path': prod_existente.get('video_path', '') if prod_existente else ''
-        }
-
+        def to_f(v): return float(str(v).replace(',', '.')) if v else 0.0
+        dados = {'id': id_produto or request.form.get('id'), 'nome': request.form.get('nome'), 'categoria': request.form.get('categoria'), 'preco': to_f(request.form.get('preco')), 'descricao': request.form.get('descricao'), 'em_oferta': 'em_oferta' in request.form, 'novo_preco': to_f(request.form.get('novo_preco')), 'oferta_fim': request.form.get('oferta_fim'), 'desconto_pix': int(request.form.get('desconto_pix') or 0), 'estoque': int(request.form.get('estoque') or 0), 'frete_gratis_valor': to_f(request.form.get('frete_gratis_valor')), 'prazo_entrega': request.form.get('prazo_entrega'), 'tempo_preparo': request.form.get('tempo_preparo')}
         for i in range(1, 5):
             f = request.files.get(f'imagem_{i}')
             if f and allowed_file(f.filename):
-                fname = f"{int(datetime.datetime.now().timestamp())}_img{i}_{secure_filename(f.filename)}"
+                fname = secure_filename(f.filename)
                 f.save(os.path.join(app.config['UPLOAD_FOLDER'], fname))
                 dados[f'img_path_{i}'] = f'/static/uploads/{fname}'
-
-        v = request.files.get('video')
-        if v and allowed_file(v.filename):
-            vname = f"{int(datetime.datetime.now().timestamp())}_vid_{secure_filename(v.filename)}"
-            v.save(os.path.join(app.config['UPLOAD_FOLDER'], vname))
-            dados['video_path'] = f'/static/uploads/{vname}'
-        
         database.add_or_update_produto(dados)
-        flash("Produto salvo com sucesso!")
+        flash("Produto salvo!")
         return redirect(url_for('admin_dashboard'))
-    
+    produto = database.get_produto_por_id(id_produto) if id_produto else None
     config, _ = load_shop_config()
-    return render_template("admin_editar.html", produto=prod_existente, config=config)
+    return render_template("admin_editar.html", produto=produto, config=config)
 
 @app.route("/admin/delete/<id_produto>", methods=['POST'])
 def admin_delete(id_produto):
@@ -331,87 +319,74 @@ def admin_delete(id_produto):
     flash("Produto removido!")
     return redirect(url_for('admin_dashboard'))
 
-# --- APIs E PAGAMENTO ---
+# --- APIs E FRETE ---
 @app.route("/calcular_frete", methods=['POST'])
 def calcular_frete_rota():
     dados = request.json
-    carrinho_sessao = session.get('carrinho', {})
-    
-    # Cálculo básico de frete baseado no primeiro item (ou lógica mais complexa se preferir)
-    produto_id = dados.get('produto_id') or list(carrinho_sessao.keys())[0]
-    produto = database.get_produto_por_id(produto_id)
-    
+    produto = database.get_produto_por_id(dados.get('produto_id'))
     if not produto: return jsonify({"error": "Produto não encontrado"}), 404
-    
     config, _ = load_shop_config()
-    preco = float(produto['novo_preco'] if produto.get('em_oferta') else produto['preco'])
-    opcoes = melhorenvio.calcular_frete(
-        cep_destino=dados.get('cep'), 
-        preco_produto=preco, 
-        token_melhor_envio=config.get('melhor_envio_token'), 
-        cep_origem_config=config.get('cep_origem')
-    )
+    opcoes = melhorenvio.calcular_frete(cep_destino=dados.get('cep'), preco_produto=float(produto['novo_preco'] if produto.get('em_oferta') else produto['preco']), token_melhor_envio=config.get('melhor_envio_token'), cep_origem_config=config.get('cep_origem'))
     return jsonify(opcoes)
 
+# --- ROTA DE PROCESSAR PAGAMENTO (CORRIGIDA E COMPLETA) ---
 @app.route("/processar_pagamento", methods=['POST'])
 def processar_pagamento():
-    carrinho_sessao = session.get('carrinho', {})
-    if not carrinho_sessao: return redirect(url_for('homepage'))
-    
     try:
-        # Pega o total final calculado pelo JavaScript do Checkout (Soma + Frete - Descontos)
-        total_final = float(str(request.form.get('total_final')).replace(',', '.'))
+        # Pega o valor total real vindo do formulário (calculado com quantidade, frete e desconto no JS)
+        total_real = float(request.form.get('total_final'))
         
-        # Gera descrição detalhada para o Mercado Pago
-        detalhes_itens = []
-        for id_p, qtd in carrinho_sessao.items():
-            p = database.get_produto_por_id(id_p)
-            if p: detalhes_itens.append(f"{qtd}x {p['nome']}")
-        
-        descricao_pedido = " | ".join(detalhes_itens)[:250]
+        nome = request.form.get('nome')
+        email = request.form.get('email')
+        whatsapp = request.form.get('whatsapp')
+        id_prod = request.form.get('id_produto')
 
-        # Registra a venda no banco de dados
-        id_v = database.registrar_venda(
-            request.form.get('nome'), 
-            request.form.get('email'), 
-            request.form.get('whatsapp'), 
-            descricao_pedido, 
-            len(carrinho_sessao), 
-            total_final
-        )
+        # Se for um checkout de produto único, pegamos o nome dele, se for carrinho, nome genérico
+        if id_prod and id_prod != 'carrinho_multi':
+            p = database.get_produto_por_id(id_prod)
+            nome_pedido = p['nome'] if p else "Produto da Loja"
+            item_pagamento = p if p else {'nome': nome_pedido, 'id': id_prod}
+        else:
+            nome_pedido = "Pedido em Carrinho"
+            item_pagamento = {'nome': nome_pedido, 'id': 'carrinho'}
+
+        # Registrar a venda no banco de dados
+        id_v = database.registrar_venda(nome, email, whatsapp, nome_pedido, 1, total_real)
         
-        # Usamos o primeiro produto apenas como referência visual no link de pagamento
-        primeiro_id = list(carrinho_sessao.keys())[0]
-        produto_ref = database.get_produto_por_id(primeiro_id)
-        
-        link = gerar_link_pagamento(produto_ref, id_v, total_final)
+        # Gerar o link de pagamento no Mercado Pago com o valor FINAL
+        link = gerar_link_pagamento(item_pagamento, id_v, total_real)
         
         if link:
-            session.pop('carrinho', None) # Sucesso! Limpa o carrinho
+            # Limpa o carrinho após processar o pagamento para não duplicar itens depois
+            session.pop('carrinho', None)
             return redirect(link)
         else:
-            return "Erro ao gerar link de pagamento."
+            return "Erro ao gerar link de pagamento. Verifique suas chaves de API."
             
     except Exception as e: 
-        return f"Erro no processamento: {e}"
+        return f"Erro no processamento de pagamento: {e}"
 
+# --- WEBHOOK MERCADO PAGO ---
 @app.route('/webhook/mercadopago', methods=['POST', 'GET'])
 def webhook_mercadopago():
     data = request.args if request.method == 'GET' else (request.json if request.is_json else request.form)
     id_venda = data.get('external_reference')
     status = data.get('status') or data.get('collection_status')
-    payment_id = None
-    if isinstance(data, dict):
-        payment_id = data.get('data', {}).get('id') if isinstance(data.get('data'), dict) else data.get('data.id')
+    payment_id = data.get('data.id') or (data.get('data', {}).get('id') if isinstance(data, dict) else None)
+    
     if payment_id:
         status_oficial, ref_oficial = consultar_status_mp(payment_id)
         if status_oficial:
             status = status_oficial
             id_venda = ref_oficial
-    if id_venda and status in ['approved', 'pago']:
+
+    if id_venda and status == 'approved':
         database.atualizar_status_venda(id_venda, 'pago')
+        print(f"✅ Venda {id_venda} aprovada!")
+
     if request.method == 'GET':
         return redirect(url_for('sucesso'))
+        
     return "OK", 200
 
 @app.route("/sucesso")
@@ -419,20 +394,22 @@ def sucesso():
     config, _ = load_shop_config()
     return render_template("sucesso.html", config=config)
 
+# --- ADICIONAR AO CARRINHO (CORRIGIDA) ---
 @app.route('/adicionar_carrinho/<id_produto>', methods=['POST'])
 def adicionar_carrinho(id_produto):
     quantidade = int(request.form.get('quantidade', 1))
     if 'carrinho' not in session: session['carrinho'] = {}
-    carrinho = session['carrinho']
     
-    # Soma a quantidade se já existir
+    carrinho = session['carrinho']
+    # Acumula a quantidade se já existir
     carrinho[str(id_produto)] = carrinho.get(str(id_produto), 0) + quantidade
     session.modified = True
     
+    # Se o usuário clicou em 'Comprar Agora', enviamos a quantidade para o checkout
     if request.form.get('acao') == 'comprar': 
-        return redirect(url_for('checkout'))
-        
-    flash("Adicionado ao carrinho!")
+        return redirect(url_for('checkout', id_produto=id_produto, qtd=quantidade))
+    
+    flash("Adicionado ao carrinho com sucesso!")
     return redirect(url_for('exibir_carrinho'))
 
 if __name__ == "__main__":
