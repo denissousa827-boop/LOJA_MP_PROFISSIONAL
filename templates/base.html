@@ -13,6 +13,7 @@
             --header-bg: {{ config.get('header_color', '#181818') }};
             --footer-bg: {{ config.get('footer_color', '#181818') }};
             --primary-color: #d10024;
+            --text-light: #888;
         }
 
         body {
@@ -53,27 +54,76 @@
         nav a { color: white; text-decoration: none; font-weight: 500; transition: 0.3s; font-size: 0.85em; text-transform: uppercase; }
         nav a:hover { color: var(--primary-color); }
 
-        /* Área do Usuário Superior */
-        .user-area {
-            display: flex; align-items: center; gap: 15px; font-size: 0.9em;
-        }
-        .user-link {
-            color: white; text-decoration: none; display: flex; align-items: center; gap: 8px; transition: 0.3s;
-        }
-        .user-link:hover { opacity: 0.8; }
-
-        /* Badge do Carrinho */
+        /* Área do Usuário */
+        .user-area { display: flex; align-items: center; gap: 15px; font-size: 0.9em; }
+        .user-link { color: white; text-decoration: none; display: flex; align-items: center; gap: 8px; transition: 0.3s; }
         .cart-badge {
             background: var(--primary-color);
             color: white; font-size: 10px; padding: 2px 6px;
             border-radius: 50%; position: relative; top: -10px; left: -8px;
         }
 
-        /* Rodapé */
-        footer { background-color: var(--footer-bg); color: white; padding: 40px 0; margin-top: 50px; }
-        .footer-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 30px; }
-        .footer-section h4 { border-bottom: 2px solid var(--primary-color); padding-bottom: 10px; margin-bottom: 20px; }
-        .footer-section a { color: #bbb; text-decoration: none; display: block; margin-bottom: 10px; }
+        /* Rodapé Estilo Shopee */
+        footer { 
+            background-color: white; 
+            color: #333; 
+            padding: 60px 0 20px; 
+            margin-top: 50px; 
+            border-top: 4px solid var(--primary-color);
+        }
+
+        .footer-seo-text {
+            border-bottom: 1px solid #eee;
+            padding-bottom: 40px;
+            margin-bottom: 40px;
+            font-size: 13px;
+            color: #666;
+            line-height: 1.6;
+        }
+        .footer-seo-text h2 { font-size: 16px; color: #333; margin-bottom: 15px; }
+
+        .footer-grid { 
+            display: grid; 
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); 
+            gap: 40px; 
+            margin-bottom: 40px;
+        }
+
+        .footer-section h4 { 
+            color: #333; 
+            font-size: 14px; 
+            font-weight: 700; 
+            margin-bottom: 20px; 
+            text-transform: uppercase;
+        }
+
+        .footer-section a { 
+            color: #666; 
+            text-decoration: none; 
+            display: block; 
+            margin-bottom: 10px; 
+            font-size: 13px;
+            transition: 0.2s;
+        }
+        .footer-section a:hover { color: var(--primary-color); padding-left: 5px; }
+
+        .payment-icons, .social-icons { 
+            display: flex; 
+            gap: 15px; 
+            flex-wrap: wrap; 
+            margin-top: 10px;
+        }
+        .payment-icons i, .payment-icons img { font-size: 30px; color: #444; }
+        .social-icons a { font-size: 20px; color: #444; transition: 0.3s; }
+        .social-icons a:hover { color: var(--primary-color); transform: translateY(-3px); }
+
+        .bottom-bar {
+            border-top: 1px solid #eee;
+            padding-top: 20px;
+            text-align: center;
+            font-size: 12px;
+            color: #999;
+        }
 
         .flash-messages { padding: 15px; text-align: center; background: #d4edda; color: #155724; }
 
@@ -148,23 +198,62 @@
     </main>
 
     <footer>
-        <div class="container footer-grid">
-            <div class="footer-section">
-                <h4>Sobre Nós</h4>
-                <p>{{ config.get('titulo_site', 'Nossa Loja') }} - Qualidade e confiança.</p>
+        <div class="container">
+            <div class="footer-seo-text">
+                <h2>{{ config.get('footer_seo_titulo', 'Faça compras online de qualidade na Sua Loja Shop + mais Brasil') }}</h2>
+                <p>{{ config.get('footer_seo_texto', 'A sua loja é líder em oferecer uma experiência de compra online conveniente e perfeita...') }}</p>
             </div>
-            <div class="footer-section">
-                <h4>Contato</h4>
-                <p><i class="fas fa-envelope"></i> {{ config.get('contato_email') }}</p>
-                <p><i class="fab fa-whatsapp"></i> {{ config.get('contato_whatsapp') }}</p>
-            </div>
-            <div class="footer-section">
-                <h4>Pagamento</h4>
-                <div style="font-size: 24px; display: flex; gap: 10px;">
-                    <i class="fab fa-cc-visa"></i>
-                    <i class="fab fa-cc-mastercard"></i>
-                    <i class="fas fa-pix"></i>
+
+            <div class="footer-grid">
+                <div class="footer-section">
+                    <h4>Atendimento ao Cliente</h4>
+                    <a href="{{ config.get('link_ajuda', '#') }}" target="_blank">Central de Ajuda</a>
+                    <a href="{{ config.get('link_como_comprar', '#') }}">Como Comprar</a>
+                    <a href="/politicas">Métodos de Pagamento</a>
+                    <a href="{{ config.get('link_frete', '#') }}">Frete Grátis</a>
+                    <a href="/devolucao">Devolução e Reembolso</a>
+                    <a href="https://wa.me/{{ config.get('contato_whatsapp') }}" target="_blank">Fale Conosco</a>
                 </div>
+
+                <div class="footer-section">
+                    <h4>Sobre a {{ config.get('titulo_site', 'Loja') }}</h4>
+                    <a href="/sobre">Sobre Nós</a>
+                    <a href="/politicas">Políticas da Loja</a>
+                    <a href="/privacidade">Privacidade</a>
+                    <a href="/#produtos">Ofertas Relâmpago</a>
+                    <a href="{{ config.get('link_blog', '#') }}">Blog Oficial</a>
+                </div>
+
+                <div class="footer-section">
+                    <h4>Pagamento</h4>
+                    <div class="payment-icons">
+                        <i class="fab fa-cc-visa" title="Visa"></i>
+                        <i class="fab fa-cc-mastercard" title="Mastercard"></i>
+                        <img src="https://img.icons8.com/color/35/000000/pix.png" title="Pix" style="vertical-align: middle;">
+                        <i class="fas fa-barcode" title="Boleto"></i>
+                    </div>
+                    
+                    <h4 style="margin-top: 25px;">Siga-nos</h4>
+                    <div class="social-icons">
+                        <a href="{{ config.get('link_instagram', '#') }}" target="_blank"><i class="fab fa-instagram"></i></a>
+                        <a href="{{ config.get('link_facebook', '#') }}" target="_blank"><i class="fab fa-facebook"></i></a>
+                        <a href="{{ config.get('link_tiktok', '#') }}" target="_blank"><i class="fab fa-tiktok"></i></a>
+                        <a href="https://wa.me/{{ config.get('contato_whatsapp') }}" target="_blank"><i class="fab fa-whatsapp"></i></a>
+                    </div>
+                </div>
+
+                <div class="footer-section">
+                    <h4>Contato</h4>
+                    <p style="font-size: 13px; color: #666;"><i class="fas fa-envelope" style="color: var(--primary-color);"></i> {{ config.get('contato_email') }}</p>
+                    <p style="font-size: 13px; color: #666;"><i class="fab fa-whatsapp" style="color: #25d366;"></i> {{ config.get('contato_whatsapp') }}</p>
+                    <p style="font-size: 12px; color: #888; margin-top: 15px; border-left: 2px solid var(--primary-color); padding-left: 10px;">
+                        {{ config.get('titulo_site') }} - Qualidade e Confiança em cada entrega.
+                    </p>
+                </div>
+            </div>
+
+            <div class="bottom-bar">
+                <p>&copy; 2024 {{ config.get('titulo_site') }}. Todos os direitos reservados. Brasil.</p>
             </div>
         </div>
     </footer>

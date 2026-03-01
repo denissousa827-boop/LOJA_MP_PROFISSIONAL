@@ -94,32 +94,66 @@ def produto_detalhes(id_produto):
     imagens = [produto.get(f'img_path_{i}') for i in range(1, 5) if produto.get(f'img_path_{i}')]
     return render_template("produto_detalhes.html", produto=produto, imagens=imagens, config=config, banner_pagamento=banner_pagamento)
 
-# --- ROTA DE CHECKOUT (ATUALIZADA PARA QUANTIDADE E CARRINHO) ---
+# --- NOVAS ROTAS INFORMATIVAS (RODAPÉ) ---
+@app.route("/ajuda")
+def central_ajuda():
+    config, _ = load_shop_config()
+    return render_template("central_ajuda.html", config=config)
+
+@app.route("/como-comprar")
+def como_comprar():
+    config, _ = load_shop_config()
+    return render_template("como_comprar.html", config=config)
+
+@app.route("/pagamentos")
+def metodos_pagamento():
+    config, _ = load_shop_config()
+    return render_template("metodos_pagamento.html", config=config)
+
+@app.route("/frete-gratis")
+def frete_gratis():
+    config, _ = load_shop_config()
+    return render_template("frete_gratis.html", config=config)
+
+@app.route("/devolucao")
+def devolucao_reembolso():
+    config, _ = load_shop_config()
+    return render_template("devolucao_reembolso.html", config=config)
+
+@app.route("/contato")
+def fale_conosco():
+    config, _ = load_shop_config()
+    return render_template("fale_conosco.html", config=config)
+
+@app.route("/sobre")
+def sobre_nos():
+    config, _ = load_shop_config()
+    return render_template("pagina_info.html", config=config) # Usando sua página info já existente
+
+@app.route("/privacidade")
+def privacidade():
+    config, _ = load_shop_config()
+    return render_template("politicas.html", config=config) # Usando sua política já existente
+
+# --- ROTA DE CHECKOUT ---
 @app.route("/checkout/<id_produto>")
 def checkout(id_produto):
     config, _ = load_shop_config()
     carrinho_para_exibir = []
     subtotal_valor = 0.0
-
-    # Pega a quantidade da URL (caso venha do botão 'Comprar Agora')
     qtd_direta = request.args.get('qtd', 1, type=int)
 
-    # CASO 1: Compra Direta (Botão Comprar Agora)
     if id_produto != "carrinho":
         produto = database.get_produto_por_id(id_produto)
         if not produto: return redirect(url_for('homepage'))
-        
         preco = float(produto['novo_preco'] if produto.get('em_oferta') else produto['preco'])
         subtotal_valor = preco * qtd_direta
         carrinho_para_exibir.append({'produto': produto, 'quantidade': qtd_direta})
-    
-    # CASO 2: Checkout do Carrinho Completo
     else:
         carrinho_sessao = session.get('carrinho', {})
         if not carrinho_sessao:
             flash("Seu carrinho está vazio.")
             return redirect(url_for('homepage'))
-            
         for p_id, qtd in carrinho_sessao.items():
             p = database.get_produto_por_id(p_id)
             if p:
@@ -329,19 +363,16 @@ def calcular_frete_rota():
     opcoes = melhorenvio.calcular_frete(cep_destino=dados.get('cep'), preco_produto=float(produto['novo_preco'] if produto.get('em_oferta') else produto['preco']), token_melhor_envio=config.get('melhor_envio_token'), cep_origem_config=config.get('cep_origem'))
     return jsonify(opcoes)
 
-# --- ROTA DE PROCESSAR PAGAMENTO (CORRIGIDA E COMPLETA) ---
+# --- ROTA DE PROCESSAR PAGAMENTO ---
 @app.route("/processar_pagamento", methods=['POST'])
 def processar_pagamento():
     try:
-        # Pega o valor total real vindo do formulário (calculado com quantidade, frete e desconto no JS)
         total_real = float(request.form.get('total_final'))
-        
         nome = request.form.get('nome')
         email = request.form.get('email')
         whatsapp = request.form.get('whatsapp')
         id_prod = request.form.get('id_produto')
 
-        # Se for um checkout de produto único, pegamos o nome dele, se for carrinho, nome genérico
         if id_prod and id_prod != 'carrinho_multi':
             p = database.get_produto_por_id(id_prod)
             nome_pedido = p['nome'] if p else "Produto da Loja"
@@ -350,19 +381,14 @@ def processar_pagamento():
             nome_pedido = "Pedido em Carrinho"
             item_pagamento = {'nome': nome_pedido, 'id': 'carrinho'}
 
-        # Registrar a venda no banco de dados
         id_v = database.registrar_venda(nome, email, whatsapp, nome_pedido, 1, total_real)
-        
-        # Gerar o link de pagamento no Mercado Pago com o valor FINAL
         link = gerar_link_pagamento(item_pagamento, id_v, total_real)
         
         if link:
-            # Limpa o carrinho após processar o pagamento para não duplicar itens depois
             session.pop('carrinho', None)
             return redirect(link)
         else:
             return "Erro ao gerar link de pagamento. Verifique suas chaves de API."
-            
     except Exception as e: 
         return f"Erro no processamento de pagamento: {e}"
 
@@ -386,7 +412,6 @@ def webhook_mercadopago():
 
     if request.method == 'GET':
         return redirect(url_for('sucesso'))
-        
     return "OK", 200
 
 @app.route("/sucesso")
@@ -394,18 +419,15 @@ def sucesso():
     config, _ = load_shop_config()
     return render_template("sucesso.html", config=config)
 
-# --- ADICIONAR AO CARRINHO (CORRIGIDA) ---
+# --- ADICIONAR AO CARRINHO ---
 @app.route('/adicionar_carrinho/<id_produto>', methods=['POST'])
 def adicionar_carrinho(id_produto):
     quantidade = int(request.form.get('quantidade', 1))
     if 'carrinho' not in session: session['carrinho'] = {}
-    
     carrinho = session['carrinho']
-    # Acumula a quantidade se já existir
     carrinho[str(id_produto)] = carrinho.get(str(id_produto), 0) + quantidade
     session.modified = True
     
-    # Se o usuário clicou em 'Comprar Agora', enviamos a quantidade para o checkout
     if request.form.get('acao') == 'comprar': 
         return redirect(url_for('checkout', id_produto=id_produto, qtd=quantidade))
     
