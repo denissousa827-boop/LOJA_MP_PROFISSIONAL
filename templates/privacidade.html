@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block title %}Privacidade - {{ config.get('titulo_site') }}{% endblock %}
+
+{% block content %}
+<div class="container" style="padding: 40px 15px; background: white; border-radius: 8px; margin-top: 20px;">
+    <h1 style="color: var(--primary-color);"><i class="fas fa-lock"></i> Política de Privacidade</h1>
+    <hr>
+    <p>A sua privacidade é importante para nós. É política da <strong>{{ config.get('titulo_site') }}</strong> respeitar a sua privacidade em relação a qualquer informação que possamos coletar.</p>
+    
+    <h3>Segurança de Dados</h3>
+    <p>Não compartilhamos informações de identificação pessoal publicamente ou com terceiros, exceto quando exigido por lei ou para processar seu pagamento via Mercado Pago.</p>
+
+    <h3>Cookies</h3>
+    <p>Utilizamos cookies apenas para melhorar sua experiência de navegação e lembrar itens no seu carrinho.</p>
+</div>
+{% endblock %}

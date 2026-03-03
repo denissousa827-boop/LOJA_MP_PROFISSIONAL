@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}Métodos de Pagamento{% endblock %}
+{% block content %}
+<div class="container" style="margin-top: 50px; margin-bottom: 80px; max-width: 800px;">
+    <div style="background: white; padding: 40px; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); text-align: center;">
+        <h2 style="color: var(--primary-color);"><i class="fas fa-shield-alt"></i> Pagamento Seguro</h2>
+        <p style="margin-bottom: 30px;">Processamos todos os nossos pagamentos via <strong>Mercado Pago</strong>.</p>
+        
+        <div style="display: flex; justify-content: center; gap: 20px; font-size: 40px; color: #444; margin-bottom: 30px;">
+            <i class="fab fa-cc-visa"></i>
+            <i class="fab fa-cc-mastercard"></i>
+            <img src="https://img.icons8.com/color/48/000000/pix.png" style="height: 40px;">
+            <i class="fas fa-barcode"></i>
+        </div>
+        
+        <div style="text-align: left; background: #f9f9f9; padding: 20px; border-radius: 8px;">
+            <p><strong>PIX:</strong> Confirmação imediata.</p>
+            <p><strong>Cartão:</strong> Em até 12x (sujeito a taxas da operadora).</p>
+            <p><strong>Boleto:</strong> Compensação em até 2 dias úteis.</p>
+        </div>
+    </div>
+</div>
+{% endblock %}

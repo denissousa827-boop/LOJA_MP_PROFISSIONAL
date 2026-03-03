@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block title %}Fale Conosco - {{ config.get('titulo_site') }}{% endblock %}
+
+{% block content %}
+<div class="container" style="padding: 40px 15px; background: white; border-radius: 8px; margin-top: 20px; margin-bottom: 20px;">
+    <h1 style="color: var(--primary-color);">Fale Conosco</h1>
+    <hr>
+    <div style="margin-bottom: 30px;">
+        <h3>Canais de Atendimento</h3>
+        <p><i class="fab fa-whatsapp" style="color: #25d366;"></i> <strong>WhatsApp:</strong> {{ config.get('contato_whatsapp') }}</p>
+        <p><i class="fas fa-envelope" style="color: var(--primary-color);"></i> <strong>E-mail:</strong> {{ config.get('contato_email') }}</p>
+    </div>
+    
+    <h3>Horário de Funcionamento</h3>
+    <p>Nossa equipe está disponível de Segunda a Sexta, das 08h às 18h.</p>
+</div>
+{% endblock %}

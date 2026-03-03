@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block title %}Sobre Nós - {{ config.get('titulo_site') }}{% endblock %}
+
+{% block content %}
+<div class="container" style="padding: 40px 15px; background: white; border-radius: 8px; margin-top: 20px;">
+    <h1 style="color: var(--primary-color);"><i class="fas fa-store"></i> Sobre a {{ config.get('titulo_site') }}</h1>
+    <hr>
+    <p>Bem-vindo à <strong>{{ config.get('titulo_site') }}</strong>! Somos uma loja dedicada a oferecer o que há de melhor em qualidade e inovação para nossos clientes.</p>
+    
+    <h3>Nossa Missão</h3>
+    <p>Proporcionar uma experiência de compra online segura, rápida e com produtos que facilitem o seu dia a dia, sempre com o melhor custo-benefício do Brasil.</p>
+
+    <h3>Compromisso</h3>
+    <p>Trabalhamos com transparência e ética. Todos os nossos processos, desde a escolha do fornecedor até a entrega na sua porta, são monitorados para garantir sua total satisfação.</p>
+</div>
+{% endblock %}

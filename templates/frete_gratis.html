@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block title %}Frete Grátis - {{ config.get('titulo_site') }}{% endblock %}
+
+{% block content %}
+<div class="container" style="padding: 40px 15px; background: white; border-radius: 8px; margin-top: 20px; margin-bottom: 20px;">
+    <h1 style="color: var(--primary-color);">Política de Frete</h1>
+    <hr>
+    <h3>Envio para todo o Brasil</h3>
+    <p>Trabalhamos com os Correios e as melhores transportadoras para garantir que seu produto chegue com segurança.</p>
+    
+    <h3>Regras de Frete Grátis</h3>
+    <p>Confira no carrinho se sua região possui o benefício de Frete Grátis baseado no valor mínimo de compra configurado.</p>
+
+    <h3>Prazo de Postagem</h3>
+    <p>Após a confirmação do pagamento, seu pedido é processado e enviado em até 24h úteis.</p>
+</div>
+{% endblock %}

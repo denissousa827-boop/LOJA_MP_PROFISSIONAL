@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block title %}Central de Ajuda - {{ config.get('titulo_site') }}{% endblock %}
+
+{% block content %}
+<div class="container" style="padding: 40px 15px; background: white; border-radius: 8px; margin-top: 20px; margin-bottom: 20px;">
+    <h1 style="color: var(--primary-color);">Central de Ajuda</h1>
+    <hr>
+    <h3>Dúvidas Frequentes</h3>
+    <p><strong>Meu pagamento foi aprovado?</strong> Você receberá uma confirmação por e-mail assim que o Mercado Pago validar a transação.</p>
+    <p><strong>Como rastrear?</strong> O código de rastreio é enviado automaticamente para o seu e-mail após a postagem.</p>
+    <p><strong>É seguro comprar?</strong> Sim, usamos criptografia SSL e os pagamentos são processados pelo Mercado Pago.</p>
+</div>
+{% endblock %}

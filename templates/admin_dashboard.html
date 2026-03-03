@@ -43,18 +43,36 @@
     </div>
 
     <div style="background: white; padding: 30px; border-radius: 15px; box-shadow: 0 4px 20px rgba(0,0,0,0.05); margin-bottom: 40px;">
-        <h3 style="margin-bottom: 25px; color: #1a1a1a;"><i class="fas fa-image" style="color: #ffa502;"></i> Capas das Categorias</h3>
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px;">
-            {% set categorias = ['CELULARES', 'BRINQUEDOS', 'MODA', 'CASA', 'SAUDE', 'GAMES'] %}
+        <h3 style="margin-bottom: 25px; color: #1a1a1a;"><i class="fas fa-image" style="color: #ffa502;"></i> Capas das Categorias (30)</h3>
+        
+        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 15px; max-height: 500px; overflow-y: auto; padding-right: 10px;">
+            {% set categorias = [
+                'CELULARES', 'BRINQUEDOS', 'MODA', 'CASA', 'SAUDE', 'GAMES', 
+                'FEMININA', 'PLUS SIZE', 'MASCULINA', 'SAPATOS', 'ACESSORIOS', 'BELEZA',
+                'INFANTIL', 'RELOGIOS', 'ESPORTES', 'ELETRO', 'AUTO', 'AUDIO',
+                'BOLSAS', 'VEICULOS', 'MOTOS', 'BEBE', 'PET', 'LIVROS',
+                'MOVEIS', 'FERRAMENTAS', 'JARDIM', 'LIMPEZA', 'INFO', 'OFFER'
+            ] %}
+            
             {% for cat in categorias %}
             <div style="background: #f8f9fa; padding: 15px; border-radius: 10px; border: 1px solid #eee; text-align: center;">
-                <span style="font-weight: bold; display: block; margin-bottom: 10px; font-size: 13px;">{{ cat }}</span>
+                <span style="font-weight: bold; display: block; margin-bottom: 10px; font-size: 11px; height: 30px; overflow: hidden;">{{ cat }}</span>
+                
+                {% set chave_capa = 'capa_' + cat.replace(' ', '_') %}
+                <div style="width: 50px; height: 50px; border-radius: 50%; background: #ddd; margin: 0 auto 10px; overflow: hidden; border: 2px solid #fff;">
+                    {% if config.get(chave_capa) %}
+                        <img src="{{ url_for('static', filename=config.get(chave_capa)) }}" style="width: 100%; height: 100%; object-fit: cover;">
+                    {% else %}
+                        <i class="fas fa-camera" style="color: #bbb; line-height: 50px;"></i>
+                    {% endif %}
+                </div>
+
                 <form action="{{ url_for('admin_upload_capa_cat') }}" method="POST" enctype="multipart/form-data">
                     <input type="hidden" name="categoria" value="{{ cat }}">
-                    <label for="file_{{ cat }}" style="cursor: pointer; background: #2ed573; color: white; padding: 8px 12px; border-radius: 6px; font-size: 12px; font-weight: 600; display: inline-block;">
-                        <i class="fas fa-upload"></i> Alterar Capa
+                    <label for="file_{{ cat|replace(' ', '_') }}" style="cursor: pointer; background: #2ed573; color: white; padding: 6px 10px; border-radius: 6px; font-size: 11px; font-weight: 600; display: inline-block; width: 100%;">
+                        <i class="fas fa-upload"></i> Alterar
                     </label>
-                    <input type="file" id="file_{{ cat }}" name="imagem_capa" style="display: none;" onchange="this.form.submit()">
+                    <input type="file" id="file_{{ cat|replace(' ', '_') }}" name="imagem_capa" style="display: none;" onchange="this.form.submit()">
                 </form>
             </div>
             {% endfor %}

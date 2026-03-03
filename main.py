@@ -94,7 +94,33 @@ def produto_detalhes(id_produto):
     imagens = [produto.get(f'img_path_{i}') for i in range(1, 5) if produto.get(f'img_path_{i}')]
     return render_template("produto_detalhes.html", produto=produto, imagens=imagens, config=config, banner_pagamento=banner_pagamento)
 
-# --- NOVAS ROTAS INFORMATIVAS (RODAPÉ) ---
+# --- ROTAS INFORMATIVAS (SHOP + MAIS) ---
+@app.route('/sobre')
+def sobre():
+    config, _ = load_shop_config()
+    return render_template('sobre.html', config=config)
+
+@app.route('/politicas')
+def politicas():
+    config, _ = load_shop_config()
+    return render_template('politicas.html', config=config)
+
+@app.route('/privacidade')
+def privacidade():
+    config, _ = load_shop_config()
+    return render_template('privacidade.html', config=config)
+
+@app.route('/ofertas-relampago')
+def ofertas_relampago():
+    config, _ = load_shop_config()
+    return render_template('ofertas_relampago.html', config=config)
+
+@app.route('/blog')
+def blog():
+    config, _ = load_shop_config()
+    return render_template('blog.html', config=config)
+
+# --- OUTRAS ROTAS DO RODAPÉ ---
 @app.route("/ajuda")
 def central_ajuda():
     config, _ = load_shop_config()
@@ -124,16 +150,6 @@ def devolucao_reembolso():
 def fale_conosco():
     config, _ = load_shop_config()
     return render_template("fale_conosco.html", config=config)
-
-@app.route("/sobre")
-def sobre_nos():
-    config, _ = load_shop_config()
-    return render_template("pagina_info.html", config=config) # Usando sua página info já existente
-
-@app.route("/privacidade")
-def privacidade():
-    config, _ = load_shop_config()
-    return render_template("politicas.html", config=config) # Usando sua política já existente
 
 # --- ROTA DE CHECKOUT ---
 @app.route("/checkout/<id_produto>")

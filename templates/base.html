@@ -207,12 +207,12 @@
             <div class="footer-grid">
                 <div class="footer-section">
                     <h4>Atendimento ao Cliente</h4>
-                    <a href="{{ config.get('link_ajuda', '#') }}" target="_blank">Central de Ajuda</a>
-                    <a href="{{ config.get('link_como_comprar', '#') }}">Como Comprar</a>
-                    <a href="/politicas">Métodos de Pagamento</a>
-                    <a href="{{ config.get('link_frete', '#') }}">Frete Grátis</a>
-                    <a href="/devolucao">Devolução e Reembolso</a>
-                    <a href="https://wa.me/{{ config.get('contato_whatsapp') }}" target="_blank">Fale Conosco</a>
+                    <a href="{{ url_for('central_ajuda') }}">Central de Ajuda</a>
+                    <a href="{{ url_for('como_comprar') }}">Como Comprar</a>
+                    <a href="{{ url_for('metodos_pagamento') }}">Métodos de Pagamento</a>
+                    <a href="{{ url_for('frete_gratis') }}">Frete Grátis</a>
+                    <a href="{{ url_for('devolucao_reembolso') }}">Devolução e Reembolso</a>
+                    <a href="{{ url_for('fale_conosco') }}">Fale Conosco</a>
                 </div>
 
                 <div class="footer-section">
@@ -253,7 +253,7 @@
             </div>
 
             <div class="bottom-bar">
-                <p>&copy; 2024 {{ config.get('titulo_site') }}. Todos os direitos reservados. Brasil.</p>
+                <p>&copy; 2026 {{ config.get('titulo_site') }}. Todos os direitos reservados. Brasil.</p>
             </div>
         </div>
     </footer>

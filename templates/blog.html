@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}Blog Oficial - {{ config.get('titulo_site') }}{% endblock %}
+
+{% block content %}
+<div class="container" style="padding: 40px 15px; background: white; border-radius: 8px; margin-top: 20px;">
+    <h1 style="color: var(--primary-color);"><i class="fas fa-newspaper"></i> Blog da {{ config.get('titulo_site') }}</h1>
+    <hr>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px;">
+        <div style="border: 1px solid #eee; padding: 15px; border-radius: 8px;">
+            <h3>Dicas para compras seguras online</h3>
+            <p>Saiba como identificar lojas confiáveis e proteger seus dados...</p>
+            <span style="color: #999; font-size: 12px;">Em breve</span>
+        </div>
+        <div style="border: 1px solid #eee; padding: 15px; border-radius: 8px;">
+            <h3>Tendências de 2026</h3>
+            <p>Confira os produtos que estão dominando o mercado este ano...</p>
+            <span style="color: #999; font-size: 12px;">Em breve</span>
+        </div>
+    </div>
+</div>
+{% endblock %}

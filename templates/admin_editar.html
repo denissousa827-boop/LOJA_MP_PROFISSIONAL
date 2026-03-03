@@ -38,7 +38,6 @@
 
         button[type="submit"]:hover { background-color: #26af5f; transform: scale(1.01); }
 
-        /* Estilo para as miniaturas das imagens */
         .preview-img {
             width: 60px; height: 60px; object-fit: cover; border-radius: 5px;
             border: 1px solid #ccc; margin-bottom: 5px;
@@ -67,6 +66,7 @@
 
             <label for="categoria">Categoria:</label>
             <input type="text" id="categoria" name="categoria" list="lista-categorias" value="{{ produto.categoria if produto else '' }}" required>
+            
             <datalist id="lista-categorias">
                 <option value="CELULARES">
                 <option value="BRINQUEDOS">
@@ -74,6 +74,30 @@
                 <option value="CASA">
                 <option value="SAUDE">
                 <option value="GAMES">
+                <option value="FEMININA">
+                <option value="PLUS SIZE">
+                <option value="MASCULINA">
+                <option value="SAPATOS">
+                <option value="ACESSORIOS">
+                <option value="BELEZA">
+                <option value="INFANTIL">
+                <option value="RELOGIOS">
+                <option value="ESPORTES">
+                <option value="ELETRO">
+                <option value="AUTO">
+                <option value="AUDIO">
+                <option value="BOLSAS">
+                <option value="VEICULOS">
+                <option value="MOTOS">
+                <option value="BEBE">
+                <option value="PET">
+                <option value="LIVROS">
+                <option value="MOVEIS">
+                <option value="FERRAMENTAS">
+                <option value="JARDIM">
+                <option value="LIMPEZA">
+                <option value="INFO">
+                <option value="OFFER">
             </datalist>
 
             <label for="preco">Preço de Venda Original (R$):</label>
