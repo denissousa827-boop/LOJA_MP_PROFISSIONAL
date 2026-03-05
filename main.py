@@ -37,7 +37,8 @@ def allowed_file(filename):
 
 def load_shop_config():
     config = database.get_configuracoes() or {}
-    banner_pagamento = config.get('banner_principal', '')
+    # Retorna o dicionário completo para acessar banner_principal_1, 2, 3, 4 no HTML
+    banner_pagamento = config.get('banner_principal_1', '')
     return config, banner_pagamento
 
 def consultar_status_mp(payment_id):
@@ -316,16 +317,27 @@ def admin_pedidos():
 def admin_configuracoes():
     if not session.get('admin_logged_in'): return redirect(url_for('admin_login'))
     if request.method == 'POST':
-        campos = ['titulo_site', 'contato_whatsapp', 'contato_email', 'header_color', 'footer_color', 'mercado_pago_token', 'melhor_envio_token', 'cep_origem']
+        campos = ['titulo_site', 'contato_whatsapp', 'contato_email', 'header_color', 'footer_color', 'mercado_pago_token', 'mercado_pago_public_key', 'melhor_envio_token', 'cep_origem']
         for campo in campos:
             valor = request.form.get(campo)
             if valor is not None: database.update_configuracao(campo, valor)
-        for file_key in ['logo_img', 'banner_principal']:
+        
+        # Upload da Logo
+        file_logo = request.files.get('logo_img')
+        if file_logo and allowed_file(file_logo.filename):
+            filename = f"logo_{int(datetime.datetime.now().timestamp())}_{secure_filename(file_logo.filename)}"
+            file_logo.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+            database.update_configuracao('logo_img', f'/static/uploads/{filename}')
+
+        # Upload dos 4 Banners (Grid Automático)
+        for i in range(1, 5):
+            file_key = f'banner_principal_{i}'
             file = request.files.get(file_key)
             if file and allowed_file(file.filename):
-                filename = f"{int(datetime.datetime.now().timestamp())}_{secure_filename(file.filename)}"
+                filename = f"banner_{i}_{int(datetime.datetime.now().timestamp())}_{secure_filename(file.filename)}"
                 file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
                 database.update_configuracao(file_key, f'/static/uploads/{filename}')
+
         flash("Configurações atualizadas!")
         return redirect(url_for('admin_dashboard'))
     config, _ = load_shop_config()
