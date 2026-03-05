@@ -464,3 +464,5 @@ def adicionar_carrinho(id_produto):
 
 if __name__ == "__main__":
     app.run(host='0.0.0.0', port=5000, debug=True)
+# Ultima atualizacao: 2026-03-05
+echo "# Ultima atualizacao: 2026-03-05" >> main.py
